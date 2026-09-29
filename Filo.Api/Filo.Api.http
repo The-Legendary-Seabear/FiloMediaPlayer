@@ -1,0 +1,6 @@
+@Filo.Api_HostAddress = http://localhost:5066
+
+GET {{Filo.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

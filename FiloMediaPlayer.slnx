@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Filo.Api/Filo.Api.csproj" Id="7b3bd6b9-1b34-4325-96ee-2687782fcfa0" />
+  <Project Path="Filo.Processing/Filo.Processing.pyproj" Type="888888a0-9f3d-457c-b088-3a5042f75d52" Id="3d2db0f5-2e3c-4f6d-97da-f2dcfb5f6019">
+    <Build Project="false" />
+  </Project>
+  <Project Path="FiloMediaPlayer/FiloMediaPlayer.csproj" />
+</Solution>
