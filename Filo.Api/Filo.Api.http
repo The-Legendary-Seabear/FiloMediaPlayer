@@ -4,3 +4,37 @@ GET {{Filo.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+POST {{Filo.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "TestUser",
+  "email": "test@filo.com",
+  "password": "TestPassword123!"
+}
+
+###
+
+
+POST {{Filo.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "TestUser",
+  "password": "TestPassword123!"
+}
+
+###
+
+GET https://localhost:7038/api/auth/me
+Authorization: Bearer CfDJ8HONPaBNbJJCg95OLrN772oo4c-bsOFZ2mOuOSRj56L3-_Aoz0PGEl3KIotReDroXYVsAg_SoLJnuamGUKPyM07hgWbmVfAFe4vxBFFUumsP5rh3Drgslg1WcL9nPtrE_696gIWbWrIFLi6C-JC2ATTItTSeiEDTCqDVjPt-RVdUnkldmAeFaZ6I0Xi6yr1BlS3cHXGIV0eHwwnd_6L6rDrLRYA9MmZkm0SmVURTDchkHR3OTdalWZh51mOKbnzayszba5SmqaaEQgkheSm37l9c3qANSpiw5eCtzYNmMNs27p1Ts6GHIdVLeuZhrveHBEI9sFoGCwxbikiUP8VK2n0KzozmQTw8NyPJBHJSdOZSAf47a-33i_gfmfgqPEjRKUFzzytTSTDXBAlH6nFBQQRTICVNtvTa8NKpe5qP0F7lfZZZEPPiChSM5Onf8sRCodidWJhGzwHwRpWUYyGkd1r3tKQJBFe55hHlKAwhFYBfYTr4380pmtQWRrEDSo8lrq-vP1SwNDZicgNljAsiuxj-sbKEhK-QzNqPFvM4SrTjpP51nQK_RwCy0ZNmlU3DPVo1I3IENV6632Mi5OEONjr0DD6dUeeEEQqTf-k7AQux
+
+###
+
+POST https://localhost:7038/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "CfDJ8HONPaBNbJJCg95OLrN772parkWBTIi1ONf_QqMAET-pG4OLJuZ97DkV3cCcEFWkDu6-wDblStc4fx7BGaQBBBp472-dhNyqQcmNavdeNhUrbybOTCeUDgjxW4uWVwy_JuYZ4Epu4L_LNGJAaNOpK1Hx7JBvuDDTrZrFeWFyN2ZIqnS9lU_EDhXtrOkPXS6K4V2EgxzkWKBW7HBxEsGMMY2zdMusbnwN2nMLAYtTOcpNmEbbVRUmOAGSCKWUqz1fqpmvyHNnLt7fFl9_uMDKpY2Oc2zYuNKsKHp7betWq83XExBSbdPRIGO6Q9xOAUmgKUmu9ZUUo0RfiC0YT34D-mHHAnB6FNungJQL69zYvKfKj5pupAckpiWjOevignBEPB4P7RaLnxgbi9-54FTZEbIOuUNy9pj1YtvhhISZF1kOIQEwhP7eOIlMbBaeSDcwLCt7-OvS6DT8aPxbRnNYfL5HJIvyPnmHbh_xktLQPe-E8KVkz03YeBVMu63H8QZJr3DtV0YIN2o6d4BNdWgxfpayGd2bv23z2VJXFqWI_jXe6LM0i2UmBIaa_YVooi1mmhIcAT3w7snvIt_3_l0mg638oRxAETtcQfTcQoqnw1LI"
+}
