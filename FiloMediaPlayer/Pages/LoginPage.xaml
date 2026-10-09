@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FiloMediaPlayer.Pages.LoginPage"
+             Title="LoginPage">
+    <VerticalStackLayout>
+        <Label 
+            Text="Username"
+            VerticalOptions="Center" 
+            HorizontalOptions="Center" />
+        <Entry
+            x:Name="UsernameEntry"
+            Placeholder="Enter your username"
+            VerticalOptions="Center"
+            HorizontalOptions="Center" />
+
+        <Entry
+            x:Name="PasswordEntry"
+            Placeholder="Enter your password"
+            IsPassword="True"
+            VerticalOptions="Center"
+            HorizontalOptions="Center" />
+        
+        <Button
+            Text="Login"
+            Clicked="OnLoginButtonClicked"
+            VerticalOptions="Center"
+            HorizontalOptions="Center" />
+        
+        
+    </VerticalStackLayout>
+</ContentPage>
