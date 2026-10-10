@@ -1,4 +1,5 @@
-﻿using Filo.Api.Models;
+﻿using Filo.Api.Migrations;
+using Filo.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;

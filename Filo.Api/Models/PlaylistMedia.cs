@@ -1,4 +1,6 @@
-﻿namespace Filo.Api.Models
+﻿using Filo.Api.Migrations;
+
+namespace Filo.Api.Models
 {
     public class PlaylistMedia
     {

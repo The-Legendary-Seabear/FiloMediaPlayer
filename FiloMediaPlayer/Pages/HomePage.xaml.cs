@@ -6,4 +6,9 @@ public partial class HomePage : ContentPage
 	{
 		InitializeComponent();
 	}
+
+	private async void OnCreatePlaylistButton(object sender, EventArgs e)
+	{
+		await Shell.Current.GoToAsync("CreatePlaylistPage");
+	}
 }
