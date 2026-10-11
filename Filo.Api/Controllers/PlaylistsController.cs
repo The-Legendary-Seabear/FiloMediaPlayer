@@ -5,6 +5,7 @@ using Filo.Api.Models;
 
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace Filo.Api.Controllers
@@ -42,6 +43,20 @@ namespace Filo.Api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new {message="Playlist created successfully"});
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPlaylists()
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var query = _context.Playlists.Where( playlist => playlist.UserId  == userId)
+                .Select(playlist => new PlaylistResponse { PlaylistId = playlist.PlaylistId, Name = playlist.Name, ThumbnailId = playlist.ThumbnailId});
+            var playlists = await query.ToListAsync();
+            return Ok(playlists);
         }
     }
 }
