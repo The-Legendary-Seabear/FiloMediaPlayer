@@ -11,5 +11,6 @@
 
         <Button Text="Create a Playlist" Clicked="OnCreatePlaylistButton" VerticalOptions="Center" HorizontalOptions="Center" />
         <Button Text="Show Playlists" Clicked="OnShowPlaylistButton" VerticalOptions="Center" HorizontalOptions="Center" />
+        <Button Text="Add a media file" Clicked="OnAddMediaFileButton" HorizontalOptions="Center" VerticalOptions="Center" />
     </VerticalStackLayout>
 </ContentPage>

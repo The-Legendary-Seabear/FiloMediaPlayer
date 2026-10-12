@@ -16,4 +16,9 @@ public partial class HomePage : ContentPage
 	{
         await Shell.Current.GoToAsync("ShowPlaylistsPage");
     }
+
+    private async void OnAddMediaFileButton(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("UploadMediaPage");
+    }
 }

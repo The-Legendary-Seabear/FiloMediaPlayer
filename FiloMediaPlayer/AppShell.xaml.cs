@@ -8,5 +8,6 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("HomePage", typeof(HomePage));
         Routing.RegisterRoute("CreatePlaylistPage", typeof(CreatePlaylistPage));
         Routing.RegisterRoute("ShowPlaylistsPage", typeof(ShowPlaylistsPage));
+        Routing.RegisterRoute("UploadMediaPage", typeof(UploadMediaPage));
     }
 }
