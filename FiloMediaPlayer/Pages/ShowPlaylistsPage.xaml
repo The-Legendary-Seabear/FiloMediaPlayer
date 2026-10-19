@@ -2,16 +2,45 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.ShowPlaylistsPage"
-             Title="ShowPlaylistsPage">
-    <VerticalStackLayout>
-        <CollectionView x:Name="PlaylistUiCollection" HorizontalOptions="Center" VerticalOptions="Center">
-
+             Title="Playlists">
+    <Grid>
+        <CollectionView x:Name="PlaylistUiCollection" HorizontalOptions="Fill" VerticalOptions="Fill">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Label Text="{Binding Name}" />
+                    <HorizontalStackLayout Spacing="10" Padding="10">
+                        <Image Source="{Binding ThumbnailUrl}" WidthRequest="60" HeightRequest="60" />
+                        <Label Text="{Binding Name}">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Tapped="OnPlaylistTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                        <Button Text="+" Clicked="onAddMediaClicked"/>
+                        <Button Text="Edit" Clicked="onEditPlaylistInfo" />
+                    </HorizontalStackLayout>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
-            
         </CollectionView>
-    </VerticalStackLayout>
+
+        <Grid IsVisible="False" x:Name="AddMediaOverlay">
+            <Border Padding="20" Margin="20"  WidthRequest="500" HeightRequest="500" HorizontalOptions="Center" VerticalOptions="Center">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <SearchBar x:Name="SearchMedia" TextChanged="OnSearchMediaTextChanged">
+                        
+                    </SearchBar>
+                    <CollectionView x:Name="AvailableMediaCollection" Grid.Row="1">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <HorizontalStackLayout>
+                                    <Label Text="{Binding Title}"></Label>
+                                    <Button Clicked="onAddMediaToPlaylistClicked" Text="+"/>
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Button Grid.Row="2" Text="Close" Clicked="OnCloseAddMediaOverlay" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
 </ContentPage>

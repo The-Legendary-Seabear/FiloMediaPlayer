@@ -195,6 +195,10 @@ namespace Filo.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ThumbnailId"));
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("S3ObjectKey")
                         .IsRequired()
                         .HasMaxLength(1024)

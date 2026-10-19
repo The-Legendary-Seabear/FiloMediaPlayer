@@ -2,10 +2,30 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.UploadMediaPage"
-             Title="UploadMediaPage">
+             Title="Upload Media">
     <VerticalStackLayout>
-        <Button Clicked="OnUploadMediaButton" HorizontalOptions="Center" VerticalOptions="Center" Text="Upload File"/>
+        <HorizontalStackLayout>
+            <Label x:Name="SelectedMediaName" Text="No File Selected"></Label>
+            <Button Clicked="OnUploadMediaButton" HorizontalOptions="Center" VerticalOptions="Center" Text="Upload File"/>
+        </HorizontalStackLayout>
         <Entry x:Name="UserUploadedMediaName" Placeholder="Enter Media Name" />
-        <Button Clicked="OnFinalMediaButton" Text="Create Media" HorizontalOptions="Center" VerticalOptions="Center"/>
+        <Button x:Name="UploadMediaButton" Clicked="OnFinalMediaButton" Text="Create Media" HorizontalOptions="Center" VerticalOptions="Center"/>
+        <Grid
+            x:Name="UploadStatusPanel"
+            IsVisible="False">
+            <Border Margin="20" Padding="20">
+                <VerticalStackLayout>
+                    <ActivityIndicator
+        x:Name="UploadActivityIndicator"
+        IsRunning="False" />
+
+                    <Label
+        x:Name="UploadStatusLabel"
+        Text="Uploading..." />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
     </VerticalStackLayout>
+
+    
 </ContentPage>

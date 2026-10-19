@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FiloMediaPlayer.Pages.EditPlaylistPage"
+             Title="EditPlaylistPage">
+    <VerticalStackLayout Padding="20" Spacing="15">
+
+        <Label
+            Text="Playlist Name"
+            FontAttributes="Bold" />
+
+        <Entry
+            x:Name="PlaylistNameEntry"
+            Placeholder="Enter playlist name" />
+
+        <Label
+            Text="Selected Thumbnail"
+            FontAttributes="Bold" />
+
+        <Image
+            x:Name="SelectedThumbnailImage"
+            WidthRequest="120"
+            HeightRequest="120" />
+
+        <Label
+            x:Name="SelectedThumbnailName"
+            Text="No thumbnail selected" />
+
+        <Label
+            Text="Choose Thumbnail"
+            FontAttributes="Bold" />
+
+        <CollectionView
+            x:Name="ThumbnailCollection"
+            HeightRequest="250">
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <HorizontalStackLayout
+                        Padding="5"
+                        Spacing="10">
+
+                        <Image
+                            Source="{Binding ImageUrl}"
+                            WidthRequest="60"
+                            HeightRequest="60" />
+
+                        <Label
+                            Text="{Binding Name}"
+                            VerticalOptions="Center" />
+
+                        <Button
+                            Text="Select"
+                            Clicked="OnThumbnailSelected" />
+
+                    </HorizontalStackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+        </CollectionView>
+
+        <Button
+            Text="Save Changes"
+            Clicked="OnSaveChangesClicked" />
+
+    </VerticalStackLayout>
+
+</ContentPage>

@@ -6,6 +6,8 @@
 
         public int UserId { get; set; }
 
+        public string Name { get; set; } = string.Empty;
+
         public string S3ObjectKey { get; set; } = string.Empty;
 
         public ApplicationUser User { get; set; } = null!;

@@ -7,6 +7,7 @@ public partial class UploadMediaPage : ContentPage
 {
     private FileResult? _selectedFile;
     private readonly HttpClient _httpClient;
+	private string defaultFileNamePlaceHolder = "No File Selected";
     public UploadMediaPage()
 	{
 		InitializeComponent();
@@ -25,12 +26,15 @@ public partial class UploadMediaPage : ContentPage
 		}
 
 		_selectedFile = filePicked;
+		SelectedMediaName.Text = _selectedFile.FileName;
 
-	}
+
+    }
 
 	private async void OnFinalMediaButton(object sender, EventArgs e)
 	{
-		if(string.IsNullOrEmpty(UserUploadedMediaName.Text))
+
+        if (string.IsNullOrEmpty(UserUploadedMediaName.Text))
 		{
 			await DisplayAlertAsync("Media Name", "Please Select a valid Media Name", "Close");
 			return;
@@ -41,6 +45,9 @@ public partial class UploadMediaPage : ContentPage
             await DisplayAlertAsync("File", "Please Give a valid file", "Cancel");
             return;
         }
+		UploadMediaButton.IsEnabled = false;
+        UploadStatusPanel.IsVisible = true;
+        UploadActivityIndicator.IsRunning = true;
 
 		var stream = await _selectedFile.OpenReadAsync();
         var fileContent = new StreamContent(stream);
@@ -51,12 +58,23 @@ public partial class UploadMediaPage : ContentPage
 		var token = await SecureStorage.Default.GetAsync("accessToken");
 		if(string.IsNullOrEmpty(token))
 		{
-			await DisplayAlertAsync("Token Access", "Could not retrieve the access token", "Close");
+            UploadActivityIndicator.IsRunning = false;
+            UploadStatusPanel.IsVisible = false;
+            UploadMediaButton.IsEnabled = true;
+            await DisplayAlertAsync("Token Access", "Could not retrieve the access token", "Close");
 			return;
 		}
 
-		_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 		var response = await _httpClient.PostAsync("api/media/upload", form);
+        UploadActivityIndicator.IsRunning = false;
+        UploadStatusPanel.IsVisible = false;
+		await DisplayAlertAsync("Media Upload", "Finished uploading media", "Close");
+		_selectedFile = null;
+		UserUploadedMediaName.Text = string.Empty;
+		SelectedMediaName.Text = defaultFileNamePlaceHolder;
+        UploadMediaButton.IsEnabled = true;
     }
 
 }

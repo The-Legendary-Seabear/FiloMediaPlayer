@@ -2,7 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.HomePage"
-             Title="HomePage">
+             Title="Home Page">
     <VerticalStackLayout>
         <Label 
             Text="Welcome Home :)"
@@ -12,5 +12,6 @@
         <Button Text="Create a Playlist" Clicked="OnCreatePlaylistButton" VerticalOptions="Center" HorizontalOptions="Center" />
         <Button Text="Show Playlists" Clicked="OnShowPlaylistButton" VerticalOptions="Center" HorizontalOptions="Center" />
         <Button Text="Add a media file" Clicked="OnAddMediaFileButton" HorizontalOptions="Center" VerticalOptions="Center" />
+        <Button Text="Add a thumbnail file" Clicked="OnCreateThumbnailButton" HorizontalOptions="Center" VerticalOptions="Center" />
     </VerticalStackLayout>
 </ContentPage>

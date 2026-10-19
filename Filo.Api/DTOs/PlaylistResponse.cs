@@ -5,5 +5,7 @@
         public int PlaylistId { get; set; }
         public string Name { get; set; } = "";
         public int? ThumbnailId { get; set; }
+
+        public string? ThumbnailUrl { get; set; }
     }
 }
