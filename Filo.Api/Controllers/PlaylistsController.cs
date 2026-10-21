@@ -239,6 +239,38 @@ namespace Filo.Api.Controllers
         [HttpPut("{playlistId}")]
         public async Task<IActionResult> UpdatePlaylist(int playlistId, UpdatePlaylistRequest request)
         {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.PlaylistId == playlistId && p.UserId == userId);
+            if(string.IsNullOrWhiteSpace(request.Name) || request == null)
+            {
+                return BadRequest();
+            }
+            if(playlist == null)
+            {
+                return NotFound();
+            }
+
+            if(request.ThumbnailId != playlist.ThumbnailId)
+            {
+                var thumbnail = await _context.Thumbnails.FirstOrDefaultAsync(tm => tm.ThumbnailId == request.ThumbnailId && tm.UserId == userId);
+                    if(thumbnail == null)
+                    {
+                        return NotFound();
+                    }
+
+                playlist.ThumbnailId = request.ThumbnailId;
+            }
+
+            if(request.Name != playlist.Name)
+            {
+                playlist.Name = request.Name;
+            }
+
+
             return Ok();
         }
     }

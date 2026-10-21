@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="FiloMediaPlayer.Pages.PlaybackPage"
+             Title="PlaybackPage">
+    <VerticalStackLayout>
+        <Label Text="{Binding Title}"></Label>
+
+        <toolkit:MediaElement x:Name="MediaPlayer" ShouldAutoPlay="False" PositionChanged="OnPositionChanged" MediaOpened="OnMediaOpened"/>
+
+        <Image x:Name="MediaThumbnail" IsVisible="False" WidthRequest="250" HeightRequest="250" Aspect="AspectFit" Source="{Binding ThumbnailUrl}"></Image>
+
+        <Grid ColumnDefinitions="Auto,*,Auto">
+            <Label x:Name="CurrentTimeLabel" Grid.Column="0" Text="0:00" />
+
+            <Slider x:Name="PlaybackSlider" Grid.Column="1" Minimum="0" DragStarted="OnSeekStarted" DragCompleted="OnSeekCompleted" />
+
+            <Label x:Name="TotalTimeLabel" Grid.Column="2" Text="0:00" />
+        </Grid>
+
+        <HorizontalStackLayout HorizontalOptions="Center" Spacing="20">
+            <Button x:Name="PreviousButton" Text="Previous" />
+            <Button x:Name="PlayPauseButton" Text="Pause" Clicked="OnPlayPauseClicked"/>
+            <Button x:Name="NextButton" Text="Next" />
+        </HorizontalStackLayout>
+
+        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="1" Value="1" ValueChanged="OnVolumeChanged"/>
+
+        <Label Text="Playback Mode" />
+
+        <Picker x:Name="PlaybackModePicker">
+            <Picker.Items>
+                <x:String>Normal</x:String>
+                <x:String>Shuffle All</x:String>
+                <x:String>Random No Repeat</x:String>
+                <x:String>True Random</x:String>
+            </Picker.Items>
+        </Picker>
+        
+    </VerticalStackLayout>
+</ContentPage>

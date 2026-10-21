@@ -46,4 +46,16 @@ public partial class ShowPlaylistSongs : ContentPage, IQueryAttributable
         var media = await response.Content.ReadFromJsonAsync<List<MediaResponse>>();
         SongUiCollection.ItemsSource = media;
     }
+
+    private async void OnMediaTapped(object sender, TappedEventArgs e)
+    {
+        if (sender is Label tappedLabel && tappedLabel.BindingContext is MediaResponse media)
+        {
+            var parameters = new Dictionary<string, object>();
+            parameters.Add("PassedData", media.MediaFileId);
+
+            await Shell.Current.GoToAsync("PlaybackPage", parameters);
+
+        }
+    }
 }

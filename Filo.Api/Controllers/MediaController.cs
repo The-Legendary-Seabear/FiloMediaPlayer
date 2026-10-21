@@ -1,9 +1,11 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Filo.Api.Data;
+using Filo.Api.DTOs;
 using Filo.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Filo.Api.Controllers
@@ -74,6 +76,56 @@ namespace Filo.Api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Media created successfully" });
+        }
+
+        [HttpGet("{mediaFileId}/playback")]
+        public async Task<IActionResult> GetPlaybackUrl(int mediaFileId)
+        {
+            if(!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId)) 
+            {
+                return Unauthorized();
+            }
+
+            var media = await _context.MediaFiles.Include(mf => mf.Thumbnail).FirstOrDefaultAsync(mf => mf.UserId == userId && mf.MediaFileId == mediaFileId);
+            if(media == null)
+            {
+                return NotFound();
+            }
+
+            var bucketName = _configuration["AWS:BucketName"];
+            if(string.IsNullOrEmpty(bucketName))
+            {
+                return BadRequest();
+            }
+
+            var getPreSignedUrlRequest = new GetPreSignedUrlRequest
+            {
+                BucketName = bucketName,
+                Key = media.S3ObjectKey,
+                Expires = DateTime.UtcNow.AddHours(2)
+            };
+
+            var mediaUrl = _cloudStorage.GetPreSignedURL(getPreSignedUrlRequest);
+
+            if(media.Thumbnail != null)
+            {
+                var thumbnailPreSignedURL = new GetPreSignedUrlRequest
+                {
+                    BucketName = bucketName,
+                    Key = media.Thumbnail.S3ObjectKey,
+                    Expires = DateTime.UtcNow.AddHours(2)
+                };
+
+                var thumbnailurl = _cloudStorage.GetPreSignedURL(thumbnailPreSignedURL);
+
+                var playbackMediaResponseWithThumbnail = new PlaybackMediaResponse { Title = media.Title, MediaFileId = media.MediaFileId, PlaybackUrl = mediaUrl , ContentType = media.ContentType, ThumbnailUrl = thumbnailurl};
+
+                return Ok(playbackMediaResponseWithThumbnail);
+            }
+
+            var playbackMediaResponse = new PlaybackMediaResponse { Title = media.Title, MediaFileId = media.MediaFileId, PlaybackUrl = mediaUrl, ContentType = media.ContentType };
+
+            return Ok(playbackMediaResponse);
         }
     }
 }

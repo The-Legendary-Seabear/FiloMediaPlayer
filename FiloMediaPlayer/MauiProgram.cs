@@ -11,6 +11,7 @@ namespace FiloMediaPlayer
 
             builder
                 .UseMauiApp<App>()
+                .UseMauiCommunityToolkitMediaElement(false)
                 .UseMauiCommunityToolkit()
                 .ConfigureFonts(fonts =>
                 {
