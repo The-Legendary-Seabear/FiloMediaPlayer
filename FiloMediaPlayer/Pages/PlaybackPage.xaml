@@ -7,7 +7,7 @@
     <VerticalStackLayout>
         <Label Text="{Binding Title}"></Label>
 
-        <toolkit:MediaElement x:Name="MediaPlayer" ShouldAutoPlay="False" PositionChanged="OnPositionChanged" MediaOpened="OnMediaOpened"/>
+        <toolkit:MediaElement x:Name="MediaPlayer" ShouldAutoPlay="False" PositionChanged="OnPositionChanged" MediaOpened="OnMediaOpened" MediaEnded="OnMediaEnded"/>
 
         <Image x:Name="MediaThumbnail" IsVisible="False" WidthRequest="250" HeightRequest="250" Aspect="AspectFit" Source="{Binding ThumbnailUrl}"></Image>
 
@@ -20,16 +20,17 @@
         </Grid>
 
         <HorizontalStackLayout HorizontalOptions="Center" Spacing="20">
-            <Button x:Name="PreviousButton" Text="Previous" />
+            <Button x:Name="PreviousButton" Text="Previous" Clicked="OnPreviousClicked"/>
             <Button x:Name="PlayPauseButton" Text="Pause" Clicked="OnPlayPauseClicked"/>
-            <Button x:Name="NextButton" Text="Next" />
+            <Button x:Name="NextButton" Text="Next" Clicked="OnNextClicked"/>
+            <Button x:Name="LoopButton" Text="Loop" Clicked="OnLoopButtonClicked" />
         </HorizontalStackLayout>
 
         <Slider x:Name="VolumeSlider" Minimum="0" Maximum="1" Value="1" ValueChanged="OnVolumeChanged"/>
 
         <Label Text="Playback Mode" />
 
-        <Picker x:Name="PlaybackModePicker">
+        <Picker x:Name="PlaybackModePicker" SelectedIndexChanged="OnPlaybackModeChanged">
             <Picker.Items>
                 <x:String>Normal</x:String>
                 <x:String>Shuffle All</x:String>

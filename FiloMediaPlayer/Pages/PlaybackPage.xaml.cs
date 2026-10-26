@@ -10,10 +10,36 @@ namespace FiloMediaPlayer.Pages;
 public partial class PlaybackPage : ContentPage, IQueryAttributable
 {
     public int MediaFileId { get; private set; }
+    public int PlaylistId { get; private set; }
     private readonly HttpClient _httpClient;
+    private readonly Random _random = new Random();
+    private bool _isLoopEnabled = false;
     private bool _isPlaying = true;
     private bool _isSeeking = false;
     private PlaybackMediaResponse? _currentPlaybackMedia;
+    private PlaybackMode _currentPlaybackMode = PlaybackMode.Normal;
+
+    List<int> _playlistOrder = new();
+    List<int> _playbackTimeline = new();
+    int _currentIndex;
+    private int _liveIndex;
+
+    public enum PlaybackMode
+    {
+        Normal,
+        ShuffleAll,
+        RandomNoRepeat,
+        TrueRandom
+    }
+
+    public enum PlaylistSortMode
+    {
+        PlaylistOrder,
+        AlphabeticalAscending,
+        AlphabeticalDescending,
+        Reverse
+    }
+
     public PlaybackPage()
 	{
 		InitializeComponent();
@@ -25,14 +51,25 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     {
         base.OnAppearing();
 
+        await LoadPlaylistOrder();
         await LoadPlaybackMedia();
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.TryGetValue("PassedData", out var data))
+        if (query.TryGetValue("MediaFileId", out var mediaData))
         {
-            MediaFileId = (int)data;
+            MediaFileId = (int)mediaData;
+        }
+
+        if (query.TryGetValue("PlaylistId", out var playlistData))
+        {
+            PlaylistId = (int)playlistData;
+        }
+
+        if (query.TryGetValue("PlaylistOrder", out var order))
+        {
+            _playlistOrder = (List<int>)order;
         }
     }
 
@@ -51,18 +88,21 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         Debug.Print($"ContentType: {_currentPlaybackMedia.ContentType}");
         Debug.Print($"ThumbnailUrl: {_currentPlaybackMedia.ThumbnailUrl}");
 
-        BindingContext = _currentPlaybackMedia;
-
-        if(_currentPlaybackMedia.ContentType.StartsWith("audio/"))
+        await MainThread.InvokeOnMainThreadAsync(() =>
         {
-            MediaThumbnail.IsVisible = true;
-        } else
-        {
-            MediaThumbnail.IsVisible = false;
-        }
+            BindingContext = _currentPlaybackMedia;
 
-        MediaPlayer.Source = _currentPlaybackMedia.PlaybackUrl;
-        MediaPlayer.Play();
+            if (_currentPlaybackMedia.ContentType.StartsWith("audio/"))
+            {
+                MediaThumbnail.IsVisible = true;
+            }
+            else
+            {
+                MediaThumbnail.IsVisible = false;
+            }
+
+            MediaPlayer.Source = _currentPlaybackMedia.PlaybackUrl;
+        });
     }
 
     private void OnPlayPauseClicked(object sender, EventArgs e)
@@ -91,18 +131,177 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         {
             PlaybackSlider.Maximum = MediaPlayer.Duration.TotalSeconds;
             TotalTimeLabel.Text = $"{(int)MediaPlayer.Duration.TotalMinutes}:{MediaPlayer.Duration.Seconds:D2}";
+            MediaPlayer.Play();
+            _isPlaying = true;
+            PlayPauseButton.Text = "Pause";
         });
+    }
+
+    private async void OnMediaEnded(object sender, EventArgs e)
+    {
+        if (_isLoopEnabled)
+        {
+            await LoadPlaybackMedia();
+        } 
+        else
+        {
+            await MoveToNextSong();
+        }
+
+    }
+
+    private async void OnNextClicked(object sender, EventArgs e)
+    {
+        if (_isLoopEnabled)
+        {
+            _isLoopEnabled = false;
+            LoopButton.Text = "Loop";
+        }
+
+        await MoveToNextSong();
+    }
+
+    private async void OnPreviousClicked(object sender, EventArgs e)
+    {
+        if(_currentIndex > 0)
+        {
+            _currentIndex--;
+        } 
+        
+        else
+        {
+            if (_currentPlaybackMode == PlaybackMode.Normal)
+            {
+                    var index = _playlistOrder.IndexOf(MediaFileId);
+                    if(index == 0)
+                    {
+                        var endMediaId = _playlistOrder.Last();
+                        _playbackTimeline.Insert(0, endMediaId);
+                    } else
+                    {
+                        var prevMedia = _playlistOrder[index - 1];
+                        _playbackTimeline.Insert(0, prevMedia);
+                    }
+                _liveIndex++;
+            }
+
+            else if (_currentPlaybackMode == PlaybackMode.RandomNoRepeat)
+            {
+                if (_currentIndex > 0)
+                {
+                    _currentIndex--;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            else if (_currentPlaybackMode == PlaybackMode.ShuffleAll)
+            {
+                if (_currentIndex > 0)
+                {
+                    _currentIndex--;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            else if (_currentPlaybackMode == PlaybackMode.TrueRandom)
+            {
+                if (_currentIndex > 0)
+                {
+                    _currentIndex--;
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+
+        UpdatePreviousButtonState();
+        MediaFileId = _playbackTimeline[_currentIndex];
+        await LoadPlaybackMedia();
+    }
+
+    private async Task MoveToNextSong()
+    {
+        if (_currentPlaybackMode == PlaybackMode.Normal)
+        {
+            _currentIndex++;
+            if (_currentIndex > _liveIndex)
+            {
+                _liveIndex = _currentIndex;
+            }
+            if (_currentIndex >= _playbackTimeline.Count)
+            {
+                for (int i = 0; i < _playlistOrder.Count; i++)
+                {
+                    _playbackTimeline.Add(_playlistOrder[i]);
+                }
+            }
+        }
+
+        else if (_currentPlaybackMode == PlaybackMode.RandomNoRepeat)
+        {
+            if (_currentIndex >= _liveIndex)
+            {
+                BuildRandomNoRepeatFuture();
+            }
+
+            _currentIndex++;
+
+            if (_currentIndex > _liveIndex)
+            {
+                _liveIndex = _currentIndex;
+            }
+        }
+
+        else if (_currentPlaybackMode == PlaybackMode.ShuffleAll)
+        {
+            if (_currentIndex >= _playbackTimeline.Count - 1)
+            {
+                BuildShuffleAllFuture();
+            }
+
+            _currentIndex++;
+
+            if (_currentIndex > _liveIndex)
+            {
+                _liveIndex = _currentIndex;
+            }
+        }
+
+        else if (_currentPlaybackMode == PlaybackMode.TrueRandom)
+        {
+            if (_currentIndex >= _playbackTimeline.Count - 1)
+            {
+                BuildTrueRandomFuture();
+            }
+
+            _currentIndex++;
+
+            if (_currentIndex > _liveIndex)
+            {
+                _liveIndex = _currentIndex;
+            }
+        }
+
+
+        UpdatePreviousButtonState();
+        MediaFileId = _playbackTimeline[_currentIndex];
+        await LoadPlaybackMedia();
     }
 
     private void OnPositionChanged(object sender, MediaPositionChangedEventArgs e)
     {
-        Debug.Print("Inside of On Position Changed");
         if(!_isSeeking)
         {
-            Debug.Print("Inside of the !_isSeeking");
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                Debug.Print("Inside of the main thread");
                 var current = MediaPlayer.Position.TotalSeconds;
                 PlaybackSlider.Value = current;
                 CurrentTimeLabel.Text = $"{(int)MediaPlayer.Position.TotalMinutes}:{MediaPlayer.Position.Seconds:D2}";
@@ -120,5 +319,185 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         var newPosition = TimeSpan.FromSeconds(PlaybackSlider.Value);
         await MediaPlayer.SeekTo(newPosition);
         _isSeeking = false;
+    }
+
+    private async Task LoadPlaylistOrder()
+    {
+        if (_playlistOrder.Count == 0)
+        {
+            var token = await SecureStorage.Default.GetAsync("accessToken");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.GetAsync($"api/playlists/{PlaylistId}/media");
+            if (!response.IsSuccessStatusCode)
+            {
+                await DisplayAlertAsync("Error", "Something went wrong", "Close");
+                return;
+            }
+            var media = await response.Content.ReadFromJsonAsync<List<MediaResponse>>();
+            if (media == null)
+            {
+                await DisplayAlertAsync("Error", "Something went wrong", "Close");
+                return;
+            }
+
+            _playlistOrder = media.Select(m => m.MediaFileId).ToList();
+
+        }
+
+        _playbackTimeline.Clear();
+        _currentIndex = 0;
+
+        var tempIndex = _playlistOrder.IndexOf(MediaFileId);
+        if (tempIndex == -1)
+        {
+            return;
+        }
+
+        _currentIndex = 0;
+        _liveIndex = 0;
+
+        for (int i = tempIndex; i < _playlistOrder.Count; i++)
+        {
+            _playbackTimeline.Add(_playlistOrder[i]);
+        }
+
+    }
+
+    private void OnPlaybackModeChanged(object sender, EventArgs e)
+    {
+        if (_playbackTimeline.Count == 0)
+        {
+            return;
+        }
+        switch (PlaybackModePicker.SelectedItem?.ToString())
+        {
+            case "Normal":
+                BuildNormalFuture();
+                _currentPlaybackMode = PlaybackMode.Normal;
+                break;
+
+            case "Shuffle All":
+                BuildShuffleAllFuture();
+                _currentPlaybackMode = PlaybackMode.ShuffleAll;
+                break;
+
+            case "Random No Repeat":
+                BuildRandomNoRepeatFuture();
+                _currentPlaybackMode = PlaybackMode.RandomNoRepeat;
+                break;
+
+            case "True Random":
+                BuildTrueRandomFuture();
+                _currentPlaybackMode = PlaybackMode.TrueRandom;
+                break;
+        }
+        UpdatePreviousButtonState();
+        Debug.Print($"Playback mode: {_currentPlaybackMode}");
+    }
+
+    private void BuildShuffleAllFuture()
+    {
+        var startIndex = _liveIndex + 1;
+        var numToRemove = _playbackTimeline.Count - startIndex;
+        _playbackTimeline.RemoveRange(startIndex, numToRemove);
+
+        var shuffled = new List<int>(_playlistOrder);
+        
+        for (int i = shuffled.Count - 1; i > 0; i--)
+        {
+            var randomIndex = _random.Next(0, i + 1);
+
+            var stored = shuffled[i];
+            shuffled[i] = shuffled[randomIndex];
+            shuffled[randomIndex] = stored;
+        }
+
+        if (shuffled.Count > 1 && shuffled[0] == _playbackTimeline[_liveIndex])
+        {
+            var swapIndex = _random.Next(1, shuffled.Count);
+
+            var stored = shuffled[0];
+            shuffled[0] = shuffled[swapIndex];
+            shuffled[swapIndex] = stored;
+        }
+
+        for(int i = 0; i < shuffled.Count; i++)
+        {
+            _playbackTimeline.Add(shuffled[i]);
+        }
+
+        
+    }
+
+    private void BuildNormalFuture()
+    {
+        var startIndex = _liveIndex + 1;
+        var numToRemove = _playbackTimeline.Count - startIndex;
+        _playbackTimeline.RemoveRange(startIndex, numToRemove);
+
+        var liveMediaId = _playbackTimeline[_liveIndex];
+        var playlistIndex = _playlistOrder.IndexOf(liveMediaId);
+
+        var remainingMedia = new List<int>(_playlistOrder);
+        remainingMedia.RemoveRange(0, playlistIndex + 1);
+
+        _playbackTimeline.AddRange(remainingMedia);
+    }
+
+    private void BuildRandomNoRepeatFuture()
+    {
+        var startIndex = _liveIndex + 1;
+        var numToRemove = _playbackTimeline.Count - startIndex;
+        _playbackTimeline.RemoveRange(startIndex, numToRemove);
+
+        var currentMedia = _playbackTimeline[_liveIndex];
+        
+
+        if (_playlistOrder.Count > 1)
+        {
+        var possibleMedia = _playlistOrder.Where(mediaId => mediaId != currentMedia).ToList();
+        var randomIndex = _random.Next(0, possibleMedia.Count);
+        var randomMedia = possibleMedia[randomIndex];
+        _playbackTimeline.Add(randomMedia);
+        Debug.Print($"RandomNoRepeat generated: {randomMedia}");
+        Debug.Print($"Timeline: {string.Join(", ", _playbackTimeline)}");
+        Debug.Print($"CurrentIndex: {_currentIndex}");
+        Debug.Print($"LiveIndex: {_liveIndex}");
+        }
+        else
+        {
+            _playbackTimeline.Add(currentMedia);
+        }
+
+    }
+
+    private void BuildTrueRandomFuture()
+    {
+        var startIndex = _liveIndex + 1;
+        var numToRemove = _playbackTimeline.Count - startIndex;
+        _playbackTimeline.RemoveRange(startIndex, numToRemove);
+
+        var randomIndex = _random.Next(0, _playlistOrder.Count());
+        var randomMedia = _playlistOrder[randomIndex];
+        _playbackTimeline.Add(randomMedia);
+
+    }
+
+    private void UpdatePreviousButtonState()
+    {
+        if (_currentPlaybackMode == PlaybackMode.Normal)
+        {
+            PreviousButton.IsEnabled = true;
+        }
+        else
+        {
+            PreviousButton.IsEnabled = _currentIndex > 0;
+        }
+    }
+
+    private void OnLoopButtonClicked(object sender, EventArgs e)
+    {
+        _isLoopEnabled = !_isLoopEnabled;
+        LoopButton.Text = _isLoopEnabled ? "Loop On" : "Loop";
     }
 }

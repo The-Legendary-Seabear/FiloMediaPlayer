@@ -270,7 +270,7 @@ namespace Filo.Api.Controllers
                 playlist.Name = request.Name;
             }
 
-
+            await _context.SaveChangesAsync();
             return Ok();
         }
     }

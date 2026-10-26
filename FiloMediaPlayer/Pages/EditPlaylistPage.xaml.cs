@@ -55,6 +55,7 @@ public partial class EditPlaylistPage : ContentPage, IQueryAttributable
         PlaylistNameEntry.Text = playlist.Name;
         SelectedThumbnailImage.Source = playlist.ThumbnailUrl;
         SelectedThumbnailName.Text = playlist.ThumbnailId != null ? "Thumbnail selected" : "No thumbnail selected";
+        _selectedThumbnailId = playlist.ThumbnailId;
     }
 
     public async Task LoadThumbnails()
@@ -83,6 +84,13 @@ public partial class EditPlaylistPage : ContentPage, IQueryAttributable
 
     public async void OnSaveChangesClicked()
     {
+        var request = new UpdatePlaylistRequest
+        {
+            Name = PlaylistNameEntry.Text,
+            ThumbnailId = _selectedThumbnailId
+        };
+
+        var response = await _httpClient.PutAsJsonAsync($"api/playlists/{PlaylistId}", request);
 
     }
 }

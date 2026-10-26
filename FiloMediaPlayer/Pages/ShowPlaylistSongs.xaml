@@ -3,8 +3,32 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.ShowPlaylistSongs"
              Title="Songs">
-    <VerticalStackLayout>
-        <CollectionView x:Name="SongUiCollection" HorizontalOptions="Center" VerticalOptions="Center">
+    <Grid RowDefinitions="Auto,*">
+
+        <Grid Grid.Row="0"
+              ColumnDefinitions="*,Auto"
+              Padding="10">
+
+            <Picker
+                x:Name="SortModePicker"
+    Grid.Column="1"
+    Title="Sort"
+    WidthRequest="140"
+    HorizontalOptions="End"
+    VerticalOptions="Start"
+    SelectedIndexChanged="OnSortModeChanged">
+
+                <Picker.Items>
+                    <x:String>Playlist Order</x:String>
+                    <x:String>A → Z</x:String>
+                    <x:String>Z → A</x:String>
+                    <x:String>Reverse</x:String>
+                </Picker.Items>
+            </Picker>
+
+        </Grid>
+
+        <CollectionView x:Name="SongUiCollection" HorizontalOptions="Start" VerticalOptions="Center" Grid.Row="1">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <HorizontalStackLayout>
@@ -19,5 +43,5 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
-    </VerticalStackLayout>
+    </Grid>
 </ContentPage>
