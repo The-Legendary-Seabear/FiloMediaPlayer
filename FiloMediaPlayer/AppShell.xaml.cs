@@ -13,5 +13,6 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("UploadThumbnailPage", typeof(UploadThumbnailPage));
         Routing.RegisterRoute("EditPlaylistPage", typeof(EditPlaylistPage));
         Routing.RegisterRoute("PlaybackPage", typeof(PlaybackPage));
+        Routing.RegisterRoute("ManagePlaylistMediaPage", typeof(ManagePlaylistMediaPage));
     }
 }

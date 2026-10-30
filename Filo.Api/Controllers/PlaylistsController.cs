@@ -1,4 +1,5 @@
-﻿using Amazon.S3;
+﻿using Amazon.Runtime.Internal.Auth;
+using Amazon.S3;
 using Amazon.S3.Model;
 using Filo.Api.Data;
 using Filo.Api.DTOs;
@@ -245,7 +246,7 @@ namespace Filo.Api.Controllers
             }
 
             var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.PlaylistId == playlistId && p.UserId == userId);
-            if(string.IsNullOrWhiteSpace(request.Name) || request == null)
+            if(request == null || string.IsNullOrWhiteSpace(request.Name))
             {
                 return BadRequest();
             }
@@ -256,6 +257,8 @@ namespace Filo.Api.Controllers
 
             if(request.ThumbnailId != playlist.ThumbnailId)
             {
+                if(request.ThumbnailId.HasValue)
+                {
                 var thumbnail = await _context.Thumbnails.FirstOrDefaultAsync(tm => tm.ThumbnailId == request.ThumbnailId && tm.UserId == userId);
                     if(thumbnail == null)
                     {
@@ -263,6 +266,13 @@ namespace Filo.Api.Controllers
                     }
 
                 playlist.ThumbnailId = request.ThumbnailId;
+
+                } 
+                
+                else
+                {
+                    playlist.ThumbnailId = null;
+                }
             }
 
             if(request.Name != playlist.Name)
@@ -273,5 +283,39 @@ namespace Filo.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok();
         }
+
+    [HttpDelete("{playlistId}/media/{mediaFileId}")]
+        public async Task<IActionResult> RemoveMediaFromPlaylist(int playlistId, int mediaFileId)
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.PlaylistId == playlistId && p.UserId == userId);
+
+            if (playlist == null)
+            {
+                return NotFound();
+            }
+
+            var playlistMedia = await _context.PlaylistMedia.FirstOrDefaultAsync(pm => pm.PlaylistId == playlist.PlaylistId && pm.MediaFileId == mediaFileId);
+
+            if (playlistMedia == null)
+            {
+                return NotFound();
+            }
+
+            _context.PlaylistMedia.Remove(playlistMedia);
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
+
+
+
     }
-}
+    }

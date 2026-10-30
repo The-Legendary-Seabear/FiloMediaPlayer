@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiloMediaPlayer.Pages.ManagePlaylistMediaPage"
+    x:Name="ManageMediaPage"
+    Title="Manage Playlist Media">
+    
+
+    <Grid
+        Padding="20"
+        RowDefinitions="Auto,Auto,Auto,Auto,*"
+        RowSpacing="15">
+
+        <!-- Page heading -->
+        <Label
+            Grid.Row="0"
+            Text="Manage Playlist Media"
+            FontSize="24"
+            FontAttributes="Bold" />
+
+        <!-- Toggle between the two media lists -->
+        <Grid
+            Grid.Row="1"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="10">
+
+            <Button
+                Grid.Column="0"
+                x:Name="CurrentMediaButton"
+                Text="In Playlist"
+                Clicked="OnCurrentMediaClicked" />
+
+            <Button
+                Grid.Column="1"
+                x:Name="AvailableMediaButton"
+                Text="Available Media"
+                Clicked="OnAvailableMediaClicked" />
+
+        </Grid>
+
+        <!-- Search the currently displayed list -->
+        <SearchBar
+            Grid.Row="2"
+            x:Name="MediaSearchBar"
+            Placeholder="Search media..."
+            TextChanged="OnMediaSearchTextChanged" />
+
+        <!-- Display the active list -->
+        <Label
+            Grid.Row="3"
+            x:Name="MediaListTitle"
+            Text="Media in Playlist"
+            FontAttributes="Bold"
+            FontSize="18" />
+
+        <CollectionView
+            Grid.Row="4"
+            x:Name="MediaCollection"
+            SelectionMode="None">
+
+            <CollectionView.EmptyView>
+                <Label
+                    Text="No media found."
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+
+                    <Grid
+                        Padding="10"
+                        ColumnDefinitions="60,*,Auto"
+                        ColumnSpacing="10">
+
+                        <!-- Media thumbnail -->
+                        <Image
+                            Grid.Column="0"
+                            Source="{Binding ThumbnailUrl}"
+                            WidthRequest="55"
+                            HeightRequest="55"
+                            Aspect="AspectFill" />
+
+                        <!-- Media title -->
+                        <Label
+                            Grid.Column="1"
+                            Text="{Binding Title}"
+                            VerticalOptions="Center"
+                            LineBreakMode="TailTruncation" />
+
+                        <!-- Add or Remove -->
+                        <Button
+                            Grid.Column="2"
+                            Text="{Binding Source={x:Reference ManageMediaPage}, Path=MediaActionText}"
+                            Clicked="OnMediaActionClicked"
+                            VerticalOptions="Center" />
+
+                    </Grid>
+
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+        </CollectionView>
+
+    </Grid>
+
+</ContentPage>

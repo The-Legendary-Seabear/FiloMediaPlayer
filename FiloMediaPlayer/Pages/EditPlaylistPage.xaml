@@ -1,68 +1,50 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="FiloMediaPlayer.Pages.EditPlaylistPage"
-             Title="EditPlaylistPage">
-    <VerticalStackLayout Padding="20" Spacing="15">
 
-        <Label
-            Text="Playlist Name"
-            FontAttributes="Bold" />
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:FiloMediaPlayer.Components"
+    x:Class="FiloMediaPlayer.Pages.EditPlaylistPage"
+    Title="Edit Playlist">
 
-        <Entry
-            x:Name="PlaylistNameEntry"
-            Placeholder="Enter playlist name" />
+    <Grid
+        Padding="20"
+        RowDefinitions="Auto,*,Auto"
+        RowSpacing="15">
 
-        <Label
-            Text="Selected Thumbnail"
-            FontAttributes="Bold" />
+        <VerticalStackLayout
+            Grid.Row="0"
+            Spacing="10">
 
-        <Image
-            x:Name="SelectedThumbnailImage"
-            WidthRequest="120"
-            HeightRequest="120" />
+            <Label
+                Text="Playlist Name"
+                FontAttributes="Bold" />
 
-        <Label
-            x:Name="SelectedThumbnailName"
-            Text="No thumbnail selected" />
+            <Entry
+                x:Name="PlaylistNameEntry"
+                Placeholder="Enter playlist name"
+                MaxLength="255" />
 
-        <Label
-            Text="Choose Thumbnail"
-            FontAttributes="Bold" />
+        </VerticalStackLayout>
 
-        <CollectionView
-            x:Name="ThumbnailCollection"
-            HeightRequest="250">
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="15">
 
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <HorizontalStackLayout
-                        Padding="5"
-                        Spacing="10">
+                <components:ThumbnailPickerView
+                    x:Name="ThumbnailPicker" />
 
-                        <Image
-                            Source="{Binding ImageUrl}"
-                            WidthRequest="60"
-                            HeightRequest="60" />
+                <Button
+                    Text="Manage Playlist Media"
+                    Clicked="OnManageMediaClicked" />
 
-                        <Label
-                            Text="{Binding Name}"
-                            VerticalOptions="Center" />
-
-                        <Button
-                            Text="Select"
-                            Clicked="OnThumbnailSelected" />
-
-                    </HorizontalStackLayout>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-
-        </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
 
         <Button
+            Grid.Row="2"
             Text="Save Changes"
             Clicked="OnSaveChangesClicked" />
 
-    </VerticalStackLayout>
+    </Grid>
 
 </ContentPage>

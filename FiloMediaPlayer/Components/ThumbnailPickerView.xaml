@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiloMediaPlayer.Components.ThumbnailPickerView">
+
+    <VerticalStackLayout
+        Spacing="15"
+        Padding="10">
+
+        <Label
+            Text="Choose Thumbnail"
+            FontSize="18"
+            FontAttributes="Bold" />
+
+        <!-- Search thumbnails -->
+        <SearchBar
+            x:Name="ThumbnailSearchBar"
+            Placeholder="Search thumbnails by title..." 
+            TextChanged="OnThumbnailSearchTextChanged"/>
+
+        <!-- Horizontal thumbnail gallery -->
+        <CollectionView
+            x:Name="ThumbnailCollection"
+            HeightRequest="220"
+            SelectionMode="Single"
+            SelectionChanged="OnThumbnailSelectionChanged">
+
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout
+                    Orientation="Horizontal"
+                    ItemSpacing="12" />
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.EmptyView>
+                <Label
+                    Text="No thumbnails found."
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+
+                    <Border
+            WidthRequest="175"
+            Padding="8"
+            Stroke="Transparent"
+            StrokeThickness="2"
+            StrokeShape="RoundRectangle 10"
+            BackgroundColor="Transparent">
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="Stroke"
+                                    Value="Transparent" />
+                                        <Setter Property="BackgroundColor"
+                                    Value="Transparent" />
+                                    </VisualState.Setters>
+                                </VisualState>
+
+                                <VisualState Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Property="Stroke"
+                                    Value="DodgerBlue" />
+                                        <Setter Property="BackgroundColor"
+                                    Value="#202C40" />
+                                    </VisualState.Setters>
+                                </VisualState>
+
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <VerticalStackLayout Spacing="5">
+
+                            <Border
+                    WidthRequest="140"
+                    HeightRequest="140"
+                    Padding="5"
+                    Stroke="Gray"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 8">
+
+                                <Image
+                        Source="{Binding ImageUrl}"
+                        Aspect="AspectFit"
+                        HorizontalOptions="Fill"
+                        VerticalOptions="Fill" />
+
+                            </Border>
+
+                            <Label
+                    Text="{Binding Name}"
+                    HorizontalTextAlignment="Center"
+                    LineBreakMode="TailTruncation"
+                    MaxLines="1" />
+
+                        </VerticalStackLayout>
+
+                    </Border>
+
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+
+        </CollectionView>
+
+        <!-- Current selection -->
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+
+            <Label
+                Grid.Column="0"
+                x:Name="SelectedThumbnailLabel"
+                Text="Selected: None"
+                VerticalOptions="Center" />
+
+            <Button
+                Grid.Column="1"
+                Text="Remove"
+                x:Name="RemoveThumbnailButton" 
+                Clicked="OnRemoveThumbnailClicked"/>
+
+        </Grid>
+
+    </VerticalStackLayout>
+
+</ContentView>
