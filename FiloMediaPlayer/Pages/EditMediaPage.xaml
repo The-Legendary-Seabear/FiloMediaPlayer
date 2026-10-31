@@ -1,12 +1,56 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="FiloMediaPlayer.Pages.EditMediaPage"
-             Title="EditMediaPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:FiloMediaPlayer.Components"
+    x:Class="FiloMediaPlayer.Pages.EditMediaPage"
+    Title="Edit Media">
+
+    <Grid
+        Padding="20"
+        RowDefinitions="Auto,*,Auto"
+        RowSpacing="15">
+
+        <!-- Media title -->
+        <VerticalStackLayout
+            Grid.Row="0"
+            Spacing="10">
+
+            <Label
+                Text="Media Title"
+                FontAttributes="Bold" />
+
+            <Entry
+                x:Name="MediaTitleEntry"
+                Placeholder="Enter media title"
+                MaxLength="255" />
+
+            <Button
+    Text="Manage Media Playlists"
+    Clicked="OnManagePlaylistsClicked" />
+
+        </VerticalStackLayout>
+
+        <!-- Scrollable editor content -->
+        <ScrollView Grid.Row="1">
+
+            <VerticalStackLayout Spacing="15">
+
+                <!-- Reusable thumbnail selector -->
+                <components:ThumbnailPickerView
+                    x:Name="ThumbnailPicker" />
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+        <!-- Save button -->
+        <Button
+            Grid.Row="2"
+            Text="Save Changes"
+            Clicked="OnSaveChangesClicked" />
+
+    </Grid>
+
 </ContentPage>

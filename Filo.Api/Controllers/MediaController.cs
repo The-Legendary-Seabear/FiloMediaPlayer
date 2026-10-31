@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Filo.Api.Controllers
 {
@@ -127,5 +128,143 @@ namespace Filo.Api.Controllers
 
             return Ok(playbackMediaResponse);
         }
+
+        [HttpGet("{mediaFileId}")]
+        public async Task<IActionResult> GetMedia(int mediaFileId)
+        {
+            // Retrieve authenticated user ID
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return Unauthorized();
+            }
+
+            // Retrieve media belonging to user
+            var media = await _context.MediaFiles.Include(mf => mf.Thumbnail).FirstOrDefaultAsync(mf => mf.UserId == userId && mf.MediaFileId == mediaFileId);
+            if (media == null)
+            {
+                return NotFound();
+            }
+
+
+            if (media.Thumbnail != null)
+            {
+                var bucketName = _configuration["AWS:BucketName"];
+                if (string.IsNullOrEmpty(bucketName))
+                {
+                    return BadRequest();
+                }
+
+                var request = new GetPreSignedUrlRequest
+                {
+                    BucketName = bucketName,
+                    Key = media.Thumbnail.S3ObjectKey,
+                    Expires = DateTime.UtcNow.AddMinutes(30)
+                };
+
+                var imageUrl = _cloudStorage.GetPreSignedURL(request);
+                var mediaResponseWithThumbnail = new MediaResponse { MediaFileId = media.MediaFileId, Title = media.Title, ThumbnailId = media.ThumbnailId, ThumbnailUrl = imageUrl, OriginalFileName = media.OriginalFileName, };
+                return Ok(mediaResponseWithThumbnail);
+                }
+
+            var mediaResponseWithoutThumbnail = new MediaResponse { MediaFileId = media.MediaFileId, Title = media.Title, ThumbnailId = media.ThumbnailId, OriginalFileName = media.OriginalFileName, };
+
+            return Ok(mediaResponseWithoutThumbnail);
+        }
+
+        [HttpPut("{mediaFileId}")]
+        public async Task<IActionResult> UpdateMedia( int mediaFileId, UpdateMediaRequest request)
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var media = await _context.MediaFiles.Include(mf => mf.Thumbnail).FirstOrDefaultAsync(mf => mf.UserId == userId && mf.MediaFileId == mediaFileId);
+            if (media == null)
+            {
+                return NotFound();
+            }
+
+            if(request == null || string.IsNullOrWhiteSpace(request.Title))
+            {
+                return BadRequest();
+            }
+
+            if(request.ThumbnailId != media.ThumbnailId)
+            {
+                if (request.ThumbnailId.HasValue)
+                {
+                    var thumbnail = await _context.Thumbnails.FirstOrDefaultAsync(tm => tm.ThumbnailId == request.ThumbnailId && tm.UserId == userId);
+                    if (thumbnail == null)
+                    {
+                        return NotFound();
+                    }
+
+                    media.ThumbnailId = request.ThumbnailId;
+
+                }
+
+                else
+                {
+                    media.ThumbnailId = null;
+                }
+            }
+
+            if (request.Title != media.Title)
+            {
+                media.Title = request.Title;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        [HttpGet("{mediaFileId}/playlists")]
+        public async Task<IActionResult> GetMediaPlaylists(int mediaFileId)
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var media = await _context.MediaFiles.FirstOrDefaultAsync(mf => mf.MediaFileId == mediaFileId && mf.UserId == userId);
+
+            if (media == null)
+            {
+                return NotFound();
+            }
+
+            var playlistIds = await _context.PlaylistMedia.Where(pm => pm.MediaFileId == mediaFileId).Select(pm => pm.PlaylistId).ToListAsync();
+            var playlists = await _context.Playlists.Where(p => p.UserId == userId && playlistIds.Contains(p.PlaylistId)).Select(p => new PlaylistResponse{ PlaylistId = p.PlaylistId, Name = p.Name}).ToListAsync();
+
+            return Ok(playlists);
+        }
+
+        [HttpGet("{mediaFileId}/available-playlists")]
+        public async Task<IActionResult> GetAvailableMediaPlaylists(int mediaFileId)
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var media = await _context.MediaFiles.FirstOrDefaultAsync(mf => mf.MediaFileId == mediaFileId && mf.UserId == userId);
+
+            if (media == null)
+            {
+                return NotFound();
+            }
+
+            var playlistIds = await _context.PlaylistMedia.Where(pm => pm.MediaFileId == mediaFileId).Select(pm => pm.PlaylistId).ToListAsync();
+
+            var playlists = await _context.Playlists.Where(p => p.UserId == userId && !playlistIds.Contains(p.PlaylistId)).Select(p => new PlaylistResponse{ PlaylistId = p.PlaylistId, Name = p.Name}).ToListAsync();
+
+            return Ok(playlists);
+        }
+
+
+
     }
+    
 }

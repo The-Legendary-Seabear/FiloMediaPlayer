@@ -126,4 +126,14 @@ public partial class ShowPlaylistSongs : ContentPage, IQueryAttributable
         SongUiCollection.ItemsSource = sortedMedia;
         _currentOrderedMedia = sortedMedia;
 }
+
+    private async void OnEditMediaClicked(object sender, EventArgs e)
+    {
+        if (sender is not Button button || button.BindingContext is not MediaResponse media)
+        {
+            return;
+        }
+
+        await Shell.Current.GoToAsync( "EditMediaPage", new Dictionary<string, object> { { "MediaFileId", media.MediaFileId } });
+    }
 }

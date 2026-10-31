@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiloMediaPlayer.Pages.ManageMediaPlaylistsPage"
+    x:Name="ManagePlaylistsPage"
+    Title="Manage Media Playlists">
+
+    <Grid
+        Padding="20"
+        RowDefinitions="Auto,Auto,*"
+        RowSpacing="15">
+
+        <!-- Toggle between current and available playlists -->
+        <Grid
+            Grid.Row="0"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="10">
+
+            <Button
+                x:Name="CurrentPlaylistsButton"
+                Grid.Column="0"
+                Text="In Playlists"
+                BackgroundColor="DodgerBlue"
+                Clicked="OnCurrentPlaylistsClicked" />
+
+            <Button
+                x:Name="AvailablePlaylistsButton"
+                Grid.Column="1"
+                Text="Available Playlists"
+                BackgroundColor="Gray"
+                Clicked="OnAvailablePlaylistsClicked" />
+
+        </Grid>
+
+        <!-- Search playlists -->
+        <SearchBar
+            x:Name="PlaylistSearchBar"
+            Grid.Row="1"
+            Placeholder="Search playlists..."
+            TextChanged="OnPlaylistSearchTextChanged" />
+
+        <!-- Playlist list -->
+        <CollectionView
+            x:Name="PlaylistCollection"
+            Grid.Row="2"
+            SelectionMode="None">
+
+            <CollectionView.EmptyView>
+                <Label
+                    Text="No playlists found."
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+
+                    <Grid
+                        ColumnDefinitions="*,Auto"
+                        ColumnSpacing="12"
+                        Padding="10">
+
+                        <!-- Playlist name -->
+                        <Label
+                            Grid.Column="0"
+                            Text="{Binding Name}"
+                            VerticalOptions="Center"
+                            LineBreakMode="TailTruncation" />
+
+                        <!-- Add / Remove button -->
+                        <Button
+                            Grid.Column="1"
+                            Text="{Binding Source={x:Reference ManagePlaylistsPage}, Path=BindingContext.PlaylistActionText}"
+                            Clicked="OnPlaylistActionClicked"
+                            VerticalOptions="Center" />
+
+                    </Grid>
+
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+        </CollectionView>
+
+    </Grid>
+
+</ContentPage>
