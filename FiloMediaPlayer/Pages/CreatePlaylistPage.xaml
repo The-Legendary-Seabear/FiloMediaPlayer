@@ -3,8 +3,52 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.CreatePlaylistPage"
              Title="CreatePlaylistPage">
-    <Grid RowDefinitions="Auto" ColumnDefinitions="*,Auto">
-        <Entry x:Name="PlaylistNameEntry" Placeholder="Enter Name" Grid.Column="0"/>
-        <Button x:Name="SubmitPlaylistName" Clicked="OnCreatePlaylist" Text="Submit" Grid.Column="1"/>
-    </Grid>
+
+    <!-- Contract preserved: PlaylistNameEntry, SubmitPlaylistName,
+         OnCreatePlaylist. -->
+
+    <ScrollView>
+        <Grid Padding="{StaticResource Filo.Page.Padding}"
+              RowDefinitions="*,Auto,*">
+
+            <VerticalStackLayout Grid.Row="1"
+                                 Spacing="20"
+                                 WidthRequest="440"
+                                 MaximumWidthRequest="440"
+                                 HorizontalOptions="Center">
+
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="New playlist"
+                           Style="{StaticResource Filo.PageTitle}" />
+                    <Label Text="Give it a name. You can add artwork and media next."
+                           Style="{StaticResource Caption1}" />
+                </VerticalStackLayout>
+
+                <Border Style="{StaticResource Filo.Card}" Padding="24">
+                    <VerticalStackLayout Spacing="16">
+
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Playlist name"
+                                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Entry x:Name="PlaylistNameEntry"
+                                       Placeholder="Enter Name"
+                                       ReturnType="Done" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Button x:Name="SubmitPlaylistName"
+                                Text="Create playlist"
+                                Style="{StaticResource Filo.Button.Primary}"
+                                HorizontalOptions="Fill"
+                                Clicked="OnCreatePlaylist" />
+
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+
 </ContentPage>

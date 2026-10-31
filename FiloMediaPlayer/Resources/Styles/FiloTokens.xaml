@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<!--
+    Filo design tokens.
+
+    Primitives only - no control styles live here. Everything is a *semantic*
+    name ("Filo.Surface.Card") rather than a literal one ("Grey900") so that a
+    light theme can later be introduced by wrapping each Color below in an
+    AppThemeBinding without touching a single page or style.
+
+    Merged after Colors.xaml / Styles.xaml / AppStyles.xaml, so these win.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:f="clr-namespace:Fonts"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ===================================================================
+         SURFACES - a five step elevation ramp, darkest at the back.
+         =================================================================== -->
+
+    <Color x:Key="Filo.Surface.Bg">#0E0E11</Color>
+    <!-- app canvas / page background -->
+    <Color x:Key="Filo.Surface.Base">#16161A</Color>
+    <!-- grouped sections, nav bar -->
+    <Color x:Key="Filo.Surface.Card">#1E1E24</Color>
+    <!-- cards, list rows, inputs -->
+    <Color x:Key="Filo.Surface.Raised">#2A2A32</Color>
+    <!-- hover, pressed, filled input -->
+    <Color x:Key="Filo.Surface.Overlay">#101014</Color>
+    <!-- modal backdrop base -->
+    <Color x:Key="Filo.Scrim">#CC0E0E11</Color>
+    <!-- 80% backdrop. Alpha is baked into the colour rather than applied as
+         Opacity on the container, because Opacity cascades to children and
+         would wash out the dialog sitting on top of it. -->
+
+    <Color x:Key="Filo.Stroke">#32323C</Color>
+    <!-- hairline borders -->
+    <Color x:Key="Filo.Stroke.Strong">#45454F</Color>
+    <!-- input outlines, dividers that must read -->
+
+    <!-- ===================================================================
+         TEXT - contrast measured against Filo.Surface.Card (#1E1E24).
+         =================================================================== -->
+
+    <Color x:Key="Filo.Text">#F2F2F5</Color>
+    <!-- primary          14.8:1 -->
+    <Color x:Key="Filo.Text.Dim">#A5A5B0</Color>
+    <!-- secondary         6.4:1 -->
+    <Color x:Key="Filo.Text.Muted">#6E6E7A</Color>
+    <!-- tertiary/meta     3.2:1  large or non-essential text only -->
+    <Color x:Key="Filo.Text.OnAccent">#FFFFFF</Color>
+    <!-- on Filo.Accent    4.9:1 -->
+
+    <!-- ===================================================================
+         ACCENT - brightened violet, carried forward from the original
+         #512BD4 brand purple but lifted to a readable level on dark.
+         =================================================================== -->
+
+    <Color x:Key="Filo.Accent">#7C5CFF</Color>
+    <!-- rest              5.1:1 on Card -->
+    <Color x:Key="Filo.Accent.Hover">#9B82FF</Color>
+    <Color x:Key="Filo.Accent.Pressed">#6344E0</Color>
+    <Color x:Key="Filo.Accent.Tint">#1E1733</Color>
+    <!-- selected-row wash -->
+    <Color x:Key="Filo.Accent.TintStrong">#2A2047</Color>
+    <!-- selected + hover -->
+
+    <!-- ===================================================================
+         SEMANTIC
+         =================================================================== -->
+
+    <Color x:Key="Filo.Danger">#FF5C66</Color>
+    <Color x:Key="Filo.Danger.Hover">#FF8088</Color>
+    <Color x:Key="Filo.Danger.Tint">#2E1619</Color>
+    <Color x:Key="Filo.Success">#3DD68C</Color>
+    <Color x:Key="Filo.Warning">#FFB454</Color>
+
+    <!-- Disabled is a state, not a hue: flatten toward the surface. -->
+    <Color x:Key="Filo.Disabled.Bg">#232329</Color>
+    <Color x:Key="Filo.Disabled.Text">#5A5A64</Color>
+
+    <!-- ===================================================================
+         BRUSHES - for properties that take a Brush rather than a Color.
+         =================================================================== -->
+
+    <SolidColorBrush x:Key="Filo.Brush.Bg" Color="{StaticResource Filo.Surface.Bg}" />
+    <SolidColorBrush x:Key="Filo.Brush.Base" Color="{StaticResource Filo.Surface.Base}" />
+    <SolidColorBrush x:Key="Filo.Brush.Card" Color="{StaticResource Filo.Surface.Card}" />
+    <SolidColorBrush x:Key="Filo.Brush.Raised" Color="{StaticResource Filo.Surface.Raised}" />
+    <SolidColorBrush x:Key="Filo.Brush.Stroke" Color="{StaticResource Filo.Stroke}" />
+    <SolidColorBrush x:Key="Filo.Brush.Accent" Color="{StaticResource Filo.Accent}" />
+    <SolidColorBrush x:Key="Filo.Brush.AccentTint" Color="{StaticResource Filo.Accent.Tint}" />
+    <SolidColorBrush x:Key="Filo.Brush.Transparent" Color="Transparent" />
+
+    <!-- A subtle top-down sheen for the hero / transport surfaces. -->
+    <LinearGradientBrush x:Key="Filo.Brush.HeroWash" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.0" Color="#2A2440" />
+        <GradientStop Offset="1.0" Color="#16161A" />
+    </LinearGradientBrush>
+
+    <!-- Placeholder fill shown when a thumbnail is missing. -->
+    <LinearGradientBrush x:Key="Filo.Brush.ThumbPlaceholder" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.0" Color="#2A2A32" />
+        <GradientStop Offset="1.0" Color="#1E1E24" />
+    </LinearGradientBrush>
+
+    <!-- ===================================================================
+         SPACING - 4pt grid.
+         =================================================================== -->
+
+    <x:Double x:Key="Filo.Space.1">4</x:Double>
+    <x:Double x:Key="Filo.Space.2">8</x:Double>
+    <x:Double x:Key="Filo.Space.3">12</x:Double>
+    <x:Double x:Key="Filo.Space.4">16</x:Double>
+    <x:Double x:Key="Filo.Space.5">20</x:Double>
+    <x:Double x:Key="Filo.Space.6">24</x:Double>
+    <x:Double x:Key="Filo.Space.8">32</x:Double>
+    <x:Double x:Key="Filo.Space.10">40</x:Double>
+
+    <!-- ===================================================================
+         RADII - Int32 because Button.CornerRadius is an int; Border uses the
+         "RoundRectangle n" string form directly in its style setters.
+         =================================================================== -->
+
+    <x:Int32 x:Key="Filo.Radius.Sm">8</x:Int32>
+    <x:Int32 x:Key="Filo.Radius.Md">12</x:Int32>
+    <x:Int32 x:Key="Filo.Radius.Lg">16</x:Int32>
+    <x:Int32 x:Key="Filo.Radius.Pill">999</x:Int32>
+
+    <!-- ===================================================================
+         LAYOUT - the responsive knobs. Desktop gets more air; phone stays
+         compact. Everything else keys off these two.
+         =================================================================== -->
+
+    <OnIdiom x:Key="Filo.Page.Padding" x:TypeArguments="Thickness" Default="16,16" Desktop="28,24" />
+    <OnIdiom x:Key="Filo.Page.Gutter" x:TypeArguments="x:Double" Default="12" Desktop="20" />
+    <OnIdiom x:Key="Filo.Card.Padding" x:TypeArguments="Thickness" Default="12" Desktop="16" />
+
+    <!-- Keeps long lists from stretching to absurd line lengths on a maximised
+         desktop window, while staying edge-to-edge on a phone. -->
+    <OnIdiom x:Key="Filo.Content.MaxWidth" x:TypeArguments="x:Double" Default="100000" Desktop="1180" />
+
+    <!-- Thumbnail tile sizes. -->
+    <OnIdiom x:Key="Filo.Thumb.Row" x:TypeArguments="x:Double" Default="52" Desktop="64" />
+    <OnIdiom x:Key="Filo.Thumb.Tile" x:TypeArguments="x:Double" Default="120" Desktop="140" />
+
+    <!-- Transport control sizing on the playback screen. -->
+    <OnIdiom x:Key="Filo.Transport.Size" x:TypeArguments="x:Double" Default="48" Desktop="52" />
+    <OnIdiom x:Key="Filo.Transport.PrimarySize" x:TypeArguments="x:Double" Default="64" Desktop="72" />
+
+    <!-- ===================================================================
+         ICONS - Fluent System Icons.
+
+         A FontImageSource bakes in its Color, so an icon that appears on two
+         different backgrounds needs two resources. They are named by ROLE
+         (OnAccent / Accent / Dim) rather than by colour for that reason.
+         =================================================================== -->
+
+    <x:Double x:Key="Filo.Icon.Size">22</x:Double>
+    <x:Double x:Key="Filo.Icon.SizeLg">28</x:Double>
+
+    <!-- Transport -->
+    <FontImageSource x:Key="Filo.Icon.Previous"
+                     Glyph="{x:Static f:FluentUI.previous_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text}"
+                     Size="{StaticResource Filo.Icon.Size}" />
+
+    <FontImageSource x:Key="Filo.Icon.Next"
+                     Glyph="{x:Static f:FluentUI.next_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text}"
+                     Size="{StaticResource Filo.Icon.Size}" />
+
+    <FontImageSource x:Key="Filo.Icon.Play"
+                     Glyph="{x:Static f:FluentUI.play_32_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.OnAccent}"
+                     Size="{StaticResource Filo.Icon.SizeLg}" />
+
+    <FontImageSource x:Key="Filo.Icon.Pause"
+                     Glyph="{x:Static f:FluentUI.pause_32_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.OnAccent}"
+                     Size="{StaticResource Filo.Icon.SizeLg}" />
+
+    <FontImageSource x:Key="Filo.Icon.Loop"
+                     Glyph="{x:Static f:FluentUI.arrow_repeat_all_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text}"
+                     Size="{StaticResource Filo.Icon.Size}" />
+
+    <FontImageSource x:Key="Filo.Icon.LoopOn"
+                     Glyph="{x:Static f:FluentUI.arrow_repeat_all_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Accent.Hover}"
+                     Size="{StaticResource Filo.Icon.Size}" />
+
+    <FontImageSource x:Key="Filo.Icon.Volume"
+                     Glyph="{x:Static f:FluentUI.speaker_2_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.Dim}"
+                     Size="18" />
+
+    <FontImageSource x:Key="Filo.Icon.Shuffle"
+                     Glyph="{x:Static f:FluentUI.arrow_shuffle_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.Dim}"
+                     Size="18" />
+
+    <!-- Navigation / actions, accented for home tiles -->
+    <FontImageSource x:Key="Filo.Icon.PlaylistAccent"
+                     Glyph="{x:Static f:FluentUI.apps_list_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Accent.Hover}"
+                     Size="{StaticResource Filo.Icon.SizeLg}" />
+
+    <FontImageSource x:Key="Filo.Icon.PlaylistAddAccent"
+                     Glyph="{x:Static f:FluentUI.collections_add_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Accent.Hover}"
+                     Size="{StaticResource Filo.Icon.SizeLg}" />
+
+    <FontImageSource x:Key="Filo.Icon.MediaAccent"
+                     Glyph="{x:Static f:FluentUI.music_note_2_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Accent.Hover}"
+                     Size="{StaticResource Filo.Icon.SizeLg}" />
+
+    <FontImageSource x:Key="Filo.Icon.ImageAccent"
+                     Glyph="{x:Static f:FluentUI.image_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Accent.Hover}"
+                     Size="{StaticResource Filo.Icon.SizeLg}" />
+
+    <!-- Row-level affordances -->
+    <FontImageSource x:Key="Filo.Icon.AddAccent"
+                     Glyph="{x:Static f:FluentUI.add_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Accent.Hover}"
+                     Size="18" />
+
+    <FontImageSource x:Key="Filo.Icon.EditDim"
+                     Glyph="{x:Static f:FluentUI.edit_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.Dim}"
+                     Size="18" />
+
+    <FontImageSource x:Key="Filo.Icon.CloseDim"
+                     Glyph="{x:Static f:FluentUI.dismiss_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.Dim}"
+                     Size="18" />
+
+    <FontImageSource x:Key="Filo.Icon.UploadOnAccent"
+                     Glyph="{x:Static f:FluentUI.arrow_upload_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.OnAccent}"
+                     Size="18" />
+
+    <!-- Placeholder glyphs shown inside an empty thumbnail frame -->
+    <FontImageSource x:Key="Filo.Icon.ThumbPlaceholder"
+                     Glyph="{x:Static f:FluentUI.music_note_2_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.Muted}"
+                     Size="22" />
+
+    <FontImageSource x:Key="Filo.Icon.PlaylistPlaceholder"
+                     Glyph="{x:Static f:FluentUI.apps_list_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.Muted}"
+                     Size="22" />
+
+    <FontImageSource x:Key="Filo.Icon.ImagePlaceholder"
+                     Glyph="{x:Static f:FluentUI.image_24_regular}"
+                     FontFamily="{x:Static f:FluentUI.FontFamily}"
+                     Color="{StaticResource Filo.Text.Muted}"
+                     Size="26" />
+
+</ResourceDictionary>

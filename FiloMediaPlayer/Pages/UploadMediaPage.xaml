@@ -3,29 +3,121 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.UploadMediaPage"
              Title="Upload Media">
-    <VerticalStackLayout>
-        <HorizontalStackLayout>
-            <Label x:Name="SelectedMediaName" Text="No File Selected"></Label>
-            <Button Clicked="OnUploadMediaButton" HorizontalOptions="Center" VerticalOptions="Center" Text="Upload File"/>
-        </HorizontalStackLayout>
-        <Entry x:Name="UserUploadedMediaName" Placeholder="Enter Media Name" />
-        <Button x:Name="UploadMediaButton" Clicked="OnFinalMediaButton" Text="Create Media" HorizontalOptions="Center" VerticalOptions="Center"/>
-        <Grid
-            x:Name="UploadStatusPanel"
-            IsVisible="False">
-            <Border Margin="20" Padding="20">
-                <VerticalStackLayout>
-                    <ActivityIndicator
-        x:Name="UploadActivityIndicator"
-        IsRunning="False" />
 
-                    <Label
-        x:Name="UploadStatusLabel"
-        Text="Uploading..." />
+    <!-- Contract preserved: SelectedMediaName (.Text assigned in code and
+         reset to the defaultFileNamePlaceHolder constant), UserUploadedMediaName,
+         UploadMediaButton, UploadStatusPanel (IsVisible toggled, starts False),
+         UploadActivityIndicator (IsRunning toggled), UploadStatusLabel,
+         OnUploadMediaButton, OnFinalMediaButton. -->
+
+    <Grid>
+
+        <ScrollView>
+            <Grid Padding="{StaticResource Filo.Page.Padding}"
+                  RowDefinitions="*,Auto,*">
+
+                <VerticalStackLayout Grid.Row="1"
+                                     Spacing="20"
+                                     WidthRequest="480"
+                                     MaximumWidthRequest="480"
+                                     HorizontalOptions="Center">
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Upload media"
+                               Style="{StaticResource Filo.PageTitle}" />
+                        <Label Text="Pick a file from your device, give it a name, and add it to your library."
+                               Style="{StaticResource Caption1}" />
+                    </VerticalStackLayout>
+
+                    <Border Style="{StaticResource Filo.Card}" Padding="24">
+                        <VerticalStackLayout Spacing="18">
+
+                            <!-- File picker -->
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="File"
+                                       Style="{StaticResource Filo.FieldLabel}" />
+
+                                <Border Style="{StaticResource Filo.Panel}"
+                                        BackgroundColor="{StaticResource Filo.Surface.Bg}"
+                                        Padding="14">
+
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                                        <Border Grid.Column="0"
+                                                Style="{StaticResource Filo.ThumbFrame}"
+                                                WidthRequest="40"
+                                                HeightRequest="40">
+                                            <Image Source="{StaticResource Filo.Icon.ThumbPlaceholder}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                        </Border>
+
+                                        <Label Grid.Column="1"
+                                               x:Name="SelectedMediaName"
+                                               Text="No File Selected"
+                                               Style="{StaticResource Body2}"
+                                               VerticalOptions="Center"
+                                               LineBreakMode="MiddleTruncation"
+                                               MaxLines="1" />
+
+                                        <Button Grid.Column="2"
+                                                Text="Choose..."
+                                                Style="{StaticResource Filo.Button.Secondary}"
+                                                VerticalOptions="Center"
+                                                Clicked="OnUploadMediaButton" />
+                                    </Grid>
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <!-- Title -->
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Media name"
+                                       Style="{StaticResource Filo.FieldLabel}" />
+
+                                <Border Style="{StaticResource Filo.InputShell}">
+                                    <Entry x:Name="UserUploadedMediaName"
+                                           Placeholder="Enter Media Name" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <Button x:Name="UploadMediaButton"
+                                    Text="Create media"
+                                    Style="{StaticResource Filo.Button.Primary}"
+                                    ImageSource="{StaticResource Filo.Icon.UploadOnAccent}"
+                                    ContentLayout="Left,8"
+                                    HorizontalOptions="Fill"
+                                    Clicked="OnFinalMediaButton" />
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                </VerticalStackLayout>
+            </Grid>
+        </ScrollView>
+
+        <!-- Upload progress overlay -->
+        <Grid x:Name="UploadStatusPanel"
+              IsVisible="False"
+              BackgroundColor="{StaticResource Filo.Scrim}">
+
+            <Border Style="{StaticResource Filo.ModalSurface}"
+                    Padding="28"
+                    WidthRequest="300"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+
+                <VerticalStackLayout Spacing="16">
+                    <ActivityIndicator x:Name="UploadActivityIndicator"
+                                       IsRunning="False"
+                                       HorizontalOptions="Center" />
+
+                    <Label x:Name="UploadStatusLabel"
+                           Text="Uploading..."
+                           Style="{StaticResource Body1}"
+                           HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </Border>
         </Grid>
-    </VerticalStackLayout>
 
-    
+    </Grid>
 </ContentPage>

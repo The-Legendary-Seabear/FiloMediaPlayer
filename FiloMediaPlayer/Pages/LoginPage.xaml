@@ -3,30 +3,80 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.LoginPage"
              Title="Login Page">
-    <VerticalStackLayout>
-        <Label 
-            Text="Username"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-        <Entry
-            x:Name="UsernameEntry"
-            Placeholder="Enter your username"
-            VerticalOptions="Center"
-            HorizontalOptions="Center" />
 
-        <Entry
-            x:Name="PasswordEntry"
-            Placeholder="Enter your password"
-            IsPassword="True"
-            VerticalOptions="Center"
-            HorizontalOptions="Center" />
-        
-        <Button
-            Text="Login"
-            Clicked="OnLoginButtonClicked"
-            VerticalOptions="Center"
-            HorizontalOptions="Center" />
-        
-        
-    </VerticalStackLayout>
+    <!-- Contract preserved: UsernameEntry, PasswordEntry and
+         OnLoginButtonClicked are referenced by LoginPage.xaml.cs. -->
+
+    <ScrollView>
+        <Grid Padding="{StaticResource Filo.Page.Padding}"
+              RowDefinitions="*,Auto,*">
+
+            <VerticalStackLayout Grid.Row="1"
+                                 Spacing="24"
+                                 WidthRequest="400"
+                                 MaximumWidthRequest="400"
+                                 HorizontalOptions="Center">
+
+                <!-- Wordmark -->
+                <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
+                    <Label Text="Filo"
+                           Style="{StaticResource Display}"
+                           TextColor="{StaticResource Filo.Accent.Hover}"
+                           HorizontalTextAlignment="Center" />
+
+                    <Label Text="MEDIA PLAYER"
+                           Style="{StaticResource Caption2}"
+                           CharacterSpacing="4"
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <!-- Sign-in card -->
+                <Border Style="{StaticResource Filo.Card}" Padding="24">
+                    <VerticalStackLayout Spacing="18">
+
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Welcome back"
+                                   Style="{StaticResource Title2}" />
+                            <Label Text="Sign in to reach your library."
+                                   Style="{StaticResource Caption1}" />
+                        </VerticalStackLayout>
+
+                        <!-- Username -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Username"
+                                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Entry x:Name="UsernameEntry"
+                                       Placeholder="Enter your username"
+                                       ReturnType="Next" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Password -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Password"
+                                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Entry x:Name="PasswordEntry"
+                                       Placeholder="Enter your password"
+                                       IsPassword="True"
+                                       ReturnType="Go" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Button Text="Sign in"
+                                Style="{StaticResource Filo.Button.Primary}"
+                                Clicked="OnLoginButtonClicked"
+                                HorizontalOptions="Fill"
+                                Margin="0,4,0,0" />
+
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+
 </ContentPage>

@@ -2,13 +2,21 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:FiloMediaPlayer"
-             x:Class="FiloMediaPlayer.App">
+             x:Class="FiloMediaPlayer.App"
+             UserAppTheme="Dark">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Stock MAUI template dictionaries. Left untouched so the
+                     Filo design system stays an additive, reversible layer. -->
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/AppStyles.xaml" />
+
+                <!-- Filo design system. Merged last, so its implicit styles
+                     and re-declared keys take precedence over the above. -->
+                <ResourceDictionary Source="Resources/Styles/FiloTokens.xaml" />
+                <ResourceDictionary Source="Resources/Styles/FiloStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

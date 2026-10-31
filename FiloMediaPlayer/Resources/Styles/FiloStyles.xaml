@@ -1,0 +1,750 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<!--
+    Filo control styles, built entirely on the semantic tokens in
+    FiloTokens.xaml. No literal colours below this line.
+
+    This dictionary is merged LAST, so its implicit styles (Label, Button,
+    Border, Entry, Page, Shell ...) intentionally replace the stock MAUI
+    template equivalents in Styles.xaml / AppStyles.xaml.
+
+    Keys from AppStyles.xaml that pages already reference (Title1, Body2,
+    Caption1 ...) are re-declared here with the same names so existing markup
+    keeps working - they simply gain a correct text colour, which they never
+    had, because an explicitly-styled Label does not inherit the implicit one.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ===================================================================
+         PAGE + SHELL
+         =================================================================== -->
+
+    <Style TargetType="Page" ApplyToDerivedTypes="True">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Bg}" />
+    </Style>
+
+    <Style TargetType="Shell" ApplyToDerivedTypes="True">
+        <Setter Property="Shell.BackgroundColor" Value="{StaticResource Filo.Surface.Base}" />
+        <Setter Property="Shell.ForegroundColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="Shell.TitleColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="Shell.DisabledColor" Value="{StaticResource Filo.Disabled.Text}" />
+        <Setter Property="Shell.UnselectedColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="Shell.NavBarHasShadow" Value="False" />
+        <Setter Property="FlyoutBackgroundColor" Value="{StaticResource Filo.Surface.Base}" />
+        <Setter Property="Shell.TabBarBackgroundColor" Value="{StaticResource Filo.Surface.Base}" />
+        <Setter Property="Shell.TabBarForegroundColor" Value="{StaticResource Filo.Accent}" />
+        <Setter Property="Shell.TabBarTitleColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="Shell.TabBarUnselectedColor" Value="{StaticResource Filo.Text.Muted}" />
+    </Style>
+
+    <!-- Standard page shell: padding + max content width. Apply to the outermost
+         layout of a page, not to the ContentPage itself. -->
+    <Style x:Key="Filo.PageBody" TargetType="Layout" ApplyToDerivedTypes="True">
+        <Setter Property="Padding" Value="{StaticResource Filo.Page.Padding}" />
+        <Setter Property="MaximumWidthRequest" Value="{StaticResource Filo.Content.MaxWidth}" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+    </Style>
+
+    <!-- ===================================================================
+         TYPOGRAPHY
+         =================================================================== -->
+
+    <Style TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="LineHeight" Value="1.35" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Base that every keyed text style inherits, so colour is never lost. -->
+    <Style x:Key="Filo.Text.Base" TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="LineHeight" Value="1.35" />
+    </Style>
+
+    <Style x:Key="Display" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="48" />
+        <Setter Property="LineHeight" Value="1.15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="LargeTitle" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="32" />
+        <Setter Property="LineHeight" Value="1.2" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="Title1" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="LineHeight" Value="1.22" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="Title2" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="21" />
+        <Setter Property="LineHeight" Value="1.27" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="Title3" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="LineHeight" Value="1.3" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="Body1" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="16" />
+    </Style>
+
+    <Style x:Key="Body1Strong" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="Body2" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <Style x:Key="Body2Strong" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="Caption1" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Dim}" />
+    </Style>
+
+    <Style x:Key="Caption1Strong" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <Style x:Key="Caption2" TargetType="Label" BasedOn="{StaticResource Filo.Text.Base}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Muted}" />
+    </Style>
+
+    <!-- Semantic text roles. -->
+
+    <Style x:Key="Filo.PageTitle" TargetType="Label" BasedOn="{StaticResource Title1}" />
+
+    <Style x:Key="Filo.SectionTitle" TargetType="Label" BasedOn="{StaticResource Title3}">
+        <Setter Property="Margin" Value="0,0,0,2" />
+    </Style>
+
+    <Style x:Key="Filo.ItemTitle" TargetType="Label" BasedOn="{StaticResource Body1Strong}">
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
+        <Setter Property="MaxLines" Value="1" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style x:Key="Filo.ItemMeta" TargetType="Label" BasedOn="{StaticResource Caption1}">
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
+        <Setter Property="MaxLines" Value="1" />
+    </Style>
+
+    <!-- Form field caption sitting above an input. -->
+    <Style x:Key="Filo.FieldLabel" TargetType="Label" BasedOn="{StaticResource Caption1Strong}">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="Margin" Value="2,0,0,0" />
+    </Style>
+
+    <!-- Centred "nothing here yet" text for CollectionView.EmptyView. -->
+    <Style x:Key="Filo.EmptyState" TargetType="Label" BasedOn="{StaticResource Body1}">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Muted}" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="24" />
+    </Style>
+
+    <!-- Monospaced-ish time readout so digits do not jitter during playback. -->
+    <Style x:Key="Filo.TimeCode" TargetType="Label" BasedOn="{StaticResource Caption1}">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="WidthRequest" Value="48" />
+    </Style>
+
+    <!-- ===================================================================
+         BUTTONS
+
+         The implicit style is the NEUTRAL (secondary) button, because most
+         buttons in a media app are row-level actions. Promote the one real
+         call-to-action on a page with Filo.Button.Primary.
+         =================================================================== -->
+
+    <!-- The neutral button, declared ONCE as a keyed style. Both the implicit
+         Button style and Filo.Button.Secondary inherit from it.
+
+         This indirection matters: a control with an explicit Style does not
+         inherit the implicit style for its type, so a keyed style that merely
+         sat empty next to the implicit one would render a bare, unthemed
+         platform button. Every keyed variant below is therefore either
+         BasedOn this base or fully self-contained. -->
+    <Style x:Key="Filo.Button.Base" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Raised}" />
+        <Setter Property="BorderColor" Value="{StaticResource Filo.Stroke}" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Sm}" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="MinimumHeightRequest" Value="40" />
+        <Setter Property="MinimumWidthRequest" Value="40" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Stroke}" />
+                            <Setter Property="BorderColor" Value="{StaticResource Filo.Stroke.Strong}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Card}" />
+                            <Setter Property="Opacity" Value="0.9" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Disabled.Bg}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                            <Setter Property="BorderColor" Value="Transparent" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Button" BasedOn="{StaticResource Filo.Button.Base}" />
+
+    <Style x:Key="Filo.Button.Secondary" TargetType="Button" BasedOn="{StaticResource Filo.Button.Base}" />
+
+    <Style x:Key="Filo.Button.Primary" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.OnAccent}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent}" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Sm}" />
+        <Setter Property="Padding" Value="20,12" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Hover}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Pressed}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Disabled.Bg}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Low-emphasis action that lives inside a card or list row. -->
+    <Style x:Key="Filo.Button.Ghost" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="Transparent" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Sm}" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="MinimumHeightRequest" Value="36" />
+        <Setter Property="MinimumWidthRequest" Value="36" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Raised}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Tint}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Accent.Hover}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Compact square/pill action, e.g. the "+" add button on a row. -->
+    <Style x:Key="Filo.Button.Icon" TargetType="Button" BasedOn="{StaticResource Filo.Button.Ghost}">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="WidthRequest" Value="38" />
+        <Setter Property="HeightRequest" Value="38" />
+        <Setter Property="MinimumWidthRequest" Value="38" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Sm}" />
+    </Style>
+
+    <!-- Accent-tinted icon button, for the primary row affordance. -->
+    <Style x:Key="Filo.Button.IconAccent" TargetType="Button" BasedOn="{StaticResource Filo.Button.Icon}">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Accent.Hover}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Tint}" />
+    </Style>
+
+    <Style x:Key="Filo.Button.Danger" TargetType="Button" BasedOn="{StaticResource Filo.Button.Ghost}">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Danger}" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Danger.Tint}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Danger.Hover}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Segmented control halves. Assigned from code-behind on the two
+         "Manage" pages, which is why these must stay keyed and public. -->
+    <Style x:Key="Filo.Button.SegmentSelected" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.OnAccent}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent}" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Sm}" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="MinimumHeightRequest" Value="40" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Hover}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Filo.Button.SegmentUnselected" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="{StaticResource Filo.Stroke}" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Sm}" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="MinimumHeightRequest" Value="40" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Raised}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Playback transport. Circular, icon-sized, restrained; the play/pause
+         sibling below is the only accented one. -->
+    <Style x:Key="Filo.Button.Transport" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Raised}" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="WidthRequest" Value="{StaticResource Filo.Transport.Size}" />
+        <Setter Property="HeightRequest" Value="{StaticResource Filo.Transport.Size}" />
+        <Setter Property="MinimumWidthRequest" Value="40" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Pill}" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Stroke}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.8" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Disabled.Bg}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Filo.Button.TransportPrimary" TargetType="Button" BasedOn="{StaticResource Filo.Button.Transport}">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.OnAccent}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="WidthRequest" Value="{StaticResource Filo.Transport.PrimarySize}" />
+        <Setter Property="HeightRequest" Value="{StaticResource Filo.Transport.PrimarySize}" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Hover}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Pressed}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Toggle-style transport button in its "on" state (loop enabled). -->
+    <Style x:Key="Filo.Button.TransportActive" TargetType="Button" BasedOn="{StaticResource Filo.Button.Transport}">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Accent.Hover}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Tint}" />
+    </Style>
+
+    <!-- Play/pause is a PILL, not a circle, because its caption is driven from
+         code-behind (PlayPauseButton.Text = "Play" / "Pause"). A fixed-width
+         circle would clip the longer caption, and swapping the caption for a
+         glyph would mean editing playback code-behind. Same reasoning for the
+         loop toggle below ("Loop" / "Loop On"). -->
+    <Style x:Key="Filo.Button.PlayPause" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.OnAccent}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent}" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Padding" Value="28,0" />
+        <Setter Property="MinimumWidthRequest" Value="116" />
+        <Setter Property="HeightRequest" Value="{StaticResource Filo.Transport.Size}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Pill}" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Hover}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Pressed}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Disabled.Bg}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Text-captioned pill for the loop toggle. -->
+    <Style x:Key="Filo.Button.TransportPill" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Raised}" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="18,0" />
+        <Setter Property="MinimumWidthRequest" Value="88" />
+        <Setter Property="HeightRequest" Value="{StaticResource Filo.Transport.Size}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Filo.Radius.Pill}" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Stroke}" />
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- ===================================================================
+         SURFACES
+
+         NOTE: the implicit Border style deliberately uses BackgroundColor and
+         NOT Background. The previous implicit style (AppStyles.xaml) set the
+         Background *brush*, which outranks BackgroundColor and silently
+         defeated every BackgroundColor visual-state setter in the app - most
+         visibly the thumbnail picker's selection highlight.
+         =================================================================== -->
+
+    <Style TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Card}" />
+        <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="Padding" Value="{StaticResource Filo.Card.Padding}" />
+    </Style>
+
+    <Style x:Key="Filo.Card" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Card}" />
+        <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="Padding" Value="{StaticResource Filo.Card.Padding}" />
+    </Style>
+
+    <!-- Kept for backwards compatibility with AppStyles.xaml's key. -->
+    <Style x:Key="CardStyle" TargetType="Border" BasedOn="{StaticResource Filo.Card}" />
+
+    <!-- A list row that lifts on hover. Use for playlist / media rows. -->
+    <Style x:Key="Filo.ListRow" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Card}" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Raised}" />
+                            <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Selected">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Filo.Accent.Tint}" />
+                            <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Accent}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- Grouping container for a form section or a toolbar strip. -->
+    <Style x:Key="Filo.Panel" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Base}" />
+        <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="Padding" Value="{StaticResource Filo.Card.Padding}" />
+    </Style>
+
+    <!-- Floating dialog surface. -->
+    <Style x:Key="Filo.ModalSurface" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Card}" />
+        <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 18" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <!-- Thumbnail frame. The gradient fill IS the missing-artwork fallback:
+         when ThumbnailUrl is null the Image renders nothing and the gradient
+         shows through, so rows never collapse into ragged empty space.
+
+         No IsClippedToBounds here - that property is declared on Layout, and
+         Border does not derive from Layout (verified: XamlC XC0001 against
+         Microsoft.Maui.Controls 10.0.120). Border already clips its content
+         to StrokeShape, so the rounded corners hold regardless. -->
+    <Style x:Key="Filo.ThumbFrame" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Filo.Brush.ThumbPlaceholder}" />
+        <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 10" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <!-- Wrapper that gives an Entry / SearchBar a rounded, themed container,
+         because neither control exposes a corner radius on Windows. -->
+    <Style x:Key="Filo.InputShell" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Surface.Card}" />
+        <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 10" />
+        <Setter Property="Padding" Value="4,0" />
+    </Style>
+
+    <Style x:Key="Filo.Divider" TargetType="BoxView">
+        <Setter Property="BackgroundColor" Value="{StaticResource Filo.Stroke}" />
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+    </Style>
+
+    <!-- ===================================================================
+         INPUTS
+         =================================================================== -->
+
+    <Style TargetType="Entry">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource Filo.Text.Muted}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="MinimumHeightRequest" Value="42" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Editor">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource Filo.Text.Muted}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="MinimumHeightRequest" Value="42" />
+    </Style>
+
+    <Style TargetType="SearchBar">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource Filo.Text.Muted}" />
+        <Setter Property="CancelButtonColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="MinimumHeightRequest" Value="42" />
+    </Style>
+
+    <Style TargetType="Picker">
+        <Setter Property="TextColor" Value="{StaticResource Filo.Text}" />
+        <Setter Property="TitleColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="MinimumHeightRequest" Value="40" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="TextColor" Value="{StaticResource Filo.Disabled.Text}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Slider">
+        <Setter Property="MinimumTrackColor" Value="{StaticResource Filo.Accent}" />
+        <Setter Property="MaximumTrackColor" Value="{StaticResource Filo.Stroke.Strong}" />
+        <Setter Property="ThumbColor" Value="{StaticResource Filo.Text}" />
+    </Style>
+
+    <!-- Narrower, quieter slider for volume. -->
+    <Style x:Key="Filo.Slider.Volume" TargetType="Slider">
+        <Setter Property="MinimumTrackColor" Value="{StaticResource Filo.Text.Dim}" />
+        <Setter Property="MaximumTrackColor" Value="{StaticResource Filo.Stroke}" />
+        <Setter Property="ThumbColor" Value="{StaticResource Filo.Text.Dim}" />
+    </Style>
+
+    <Style TargetType="ActivityIndicator">
+        <Setter Property="Color" Value="{StaticResource Filo.Accent}" />
+    </Style>
+
+    <Style TargetType="ProgressBar">
+        <Setter Property="ProgressColor" Value="{StaticResource Filo.Accent}" />
+    </Style>
+
+    <Style TargetType="Switch">
+        <Setter Property="OnColor" Value="{StaticResource Filo.Accent}" />
+        <Setter Property="ThumbColor" Value="{StaticResource Filo.Text}" />
+    </Style>
+
+    <Style TargetType="CheckBox">
+        <Setter Property="Color" Value="{StaticResource Filo.Accent}" />
+    </Style>
+
+    <Style TargetType="RefreshView">
+        <Setter Property="RefreshColor" Value="{StaticResource Filo.Accent}" />
+    </Style>
+
+</ResourceDictionary>

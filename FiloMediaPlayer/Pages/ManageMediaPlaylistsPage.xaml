@@ -7,82 +7,103 @@
     x:Name="ManagePlaylistsPage"
     Title="Manage Media Playlists">
 
-    <Grid
-        Padding="20"
-        RowDefinitions="Auto,Auto,*"
-        RowSpacing="15">
+    <!-- ===================================================================
+         CONTRACT PRESERVED (ManageMediaPlaylistsPage.xaml.cs):
+           x:Name="ManagePlaylistsPage" on the PAGE is load-bearing - the
+           row button's Text binds through x:Reference to it.
 
-        <!-- Toggle between current and available playlists -->
-        <Grid
-            Grid.Row="0"
-            ColumnDefinitions="*,*"
-            ColumnSpacing="10">
+           This page sets BindingContext = this in its constructor, so the
+           binding path keeps the "BindingContext." prefix exactly as it was.
+           (Its sibling ManagePlaylistMediaPage does NOT set BindingContext
+           and binds to Path=MediaActionText with no prefix - the two pages
+           genuinely differ; do not harmonise them.)
 
-            <Button
-                x:Name="CurrentPlaylistsButton"
-                Grid.Column="0"
-                Text="In Playlists"
-                BackgroundColor="DodgerBlue"
-                Clicked="OnCurrentPlaylistsClicked" />
+           CurrentPlaylistsButton / AvailablePlaylistsButton keep their
+           x:Names: UpdatePlaylistDisplay() assigns their Style from code.
+           The hardcoded BackgroundColor="DodgerBlue"/"Gray" attributes are
+           gone from here because that same method now assigns a design-system
+           Style instead - a direct property set would outrank it.
+         =================================================================== -->
 
-            <Button
-                x:Name="AvailablePlaylistsButton"
-                Grid.Column="1"
-                Text="Available Playlists"
-                BackgroundColor="Gray"
-                Clicked="OnAvailablePlaylistsClicked" />
+    <Grid RowDefinitions="Auto,Auto,Auto,*"
+          Padding="{StaticResource Filo.Page.Padding}"
+          RowSpacing="16"
+          MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
 
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Label Text="Playlists"
+                   Style="{StaticResource Filo.PageTitle}" />
+            <Label Text="Choose which playlists include this media."
+                   Style="{StaticResource Caption1}" />
+        </VerticalStackLayout>
+
+        <!-- Segmented toggle -->
+        <Grid Grid.Row="1"
+              ColumnDefinitions="*,*"
+              ColumnSpacing="10">
+
+            <Button x:Name="CurrentPlaylistsButton"
+                    Grid.Column="0"
+                    Text="In Playlists"
+                    Style="{StaticResource Filo.Button.SegmentSelected}"
+                    Clicked="OnCurrentPlaylistsClicked" />
+
+            <Button x:Name="AvailablePlaylistsButton"
+                    Grid.Column="1"
+                    Text="Available Playlists"
+                    Style="{StaticResource Filo.Button.SegmentUnselected}"
+                    Clicked="OnAvailablePlaylistsClicked" />
         </Grid>
 
-        <!-- Search playlists -->
-        <SearchBar
-            x:Name="PlaylistSearchBar"
-            Grid.Row="1"
-            Placeholder="Search playlists..."
-            TextChanged="OnPlaylistSearchTextChanged" />
+        <Border Grid.Row="2" Style="{StaticResource Filo.InputShell}">
+            <SearchBar x:Name="PlaylistSearchBar"
+                       Placeholder="Search playlists..."
+                       TextChanged="OnPlaylistSearchTextChanged" />
+        </Border>
 
-        <!-- Playlist list -->
-        <CollectionView
-            x:Name="PlaylistCollection"
-            Grid.Row="2"
-            SelectionMode="None">
+        <CollectionView x:Name="PlaylistCollection"
+                        Grid.Row="3"
+                        SelectionMode="None">
+
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+            </CollectionView.ItemsLayout>
 
             <CollectionView.EmptyView>
-                <Label
-                    Text="No playlists found."
-                    HorizontalOptions="Center"
-                    VerticalOptions="Center" />
+                <Label Text="No playlists found."
+                       Style="{StaticResource Filo.EmptyState}" />
             </CollectionView.EmptyView>
 
             <CollectionView.ItemTemplate>
                 <DataTemplate>
 
-                    <Grid
-                        ColumnDefinitions="*,Auto"
-                        ColumnSpacing="12"
-                        Padding="10">
+                    <Border Style="{StaticResource Filo.ListRow}" Padding="14,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
 
-                        <!-- Playlist name -->
-                        <Label
-                            Grid.Column="0"
-                            Text="{Binding Name}"
-                            VerticalOptions="Center"
-                            LineBreakMode="TailTruncation" />
+                            <Border Grid.Column="0"
+                                    Style="{StaticResource Filo.ThumbFrame}"
+                                    WidthRequest="40"
+                                    HeightRequest="40">
+                                <Image Source="{StaticResource Filo.Icon.PlaylistPlaceholder}"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
 
-                        <!-- Add / Remove button -->
-                        <Button
-                            Grid.Column="1"
-                            Text="{Binding Source={x:Reference ManagePlaylistsPage}, Path=BindingContext.PlaylistActionText}"
-                            Clicked="OnPlaylistActionClicked"
-                            VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Name}"
+                                   Style="{StaticResource Filo.ItemTitle}" />
 
-                    </Grid>
+                            <Button Grid.Column="2"
+                                    Text="{Binding Source={x:Reference ManagePlaylistsPage}, Path=BindingContext.PlaylistActionText}"
+                                    Style="{StaticResource Filo.Button.Ghost}"
+                                    VerticalOptions="Center"
+                                    Clicked="OnPlaylistActionClicked" />
+                        </Grid>
+                    </Border>
 
                 </DataTemplate>
             </CollectionView.ItemTemplate>
-
         </CollectionView>
 
     </Grid>
-
 </ContentPage>

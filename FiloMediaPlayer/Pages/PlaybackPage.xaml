@@ -4,40 +4,189 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="FiloMediaPlayer.Pages.PlaybackPage"
              Title="PlaybackPage">
-    <VerticalStackLayout>
-        <Label Text="{Binding Title}"></Label>
 
-        <toolkit:MediaElement x:Name="MediaPlayer" ShouldAutoPlay="False" PositionChanged="OnPositionChanged" MediaOpened="OnMediaOpened" MediaEnded="OnMediaEnded"/>
+    <!-- ===================================================================
+         CONTRACT PRESERVED (PlaybackPage.xaml.cs):
+           MediaPlayer ........ MediaElement; Source, Volume, Play/Pause,
+                                SeekTo, Position, Duration all set from code.
+                                Its properties and three event handlers
+                                (PositionChanged / MediaOpened / MediaEnded)
+                                are byte-identical to the original.
+           MediaThumbnail ..... Image, IsVisible toggled in code. Starts False.
+           CurrentTimeLabel / TotalTimeLabel ... .Text assigned in code.
+           PlaybackSlider ..... Minimum stays 0; Maximum is assigned in
+                                OnMediaOpened. DragStarted / DragCompleted.
+           VolumeSlider ....... Minimum 0 / Maximum 1 / Value 1 preserved -
+                                these feed MediaPlayer.Volume = e.NewValue
+                                directly, so the 0..1 range is load-bearing.
+           PlayPauseButton .... .Text toggles "Play" / "Pause" in code.
+           LoopButton ......... .Text toggles "Loop" / "Loop On" in code.
+           PreviousButton / NextButton ......... Clicked handlers.
+           PlaybackModePicker . switches on SelectedItem?.ToString(), so the
+                                four item strings are reproduced EXACTLY.
+         =================================================================== -->
 
-        <Image x:Name="MediaThumbnail" IsVisible="False" WidthRequest="250" HeightRequest="250" Aspect="AspectFit" Source="{Binding ThumbnailUrl}"></Image>
+    <Grid RowDefinitions="*,Auto">
 
-        <Grid ColumnDefinitions="Auto,*,Auto">
-            <Label x:Name="CurrentTimeLabel" Grid.Column="0" Text="0:00" />
+        <!-- ========== Stage ========== -->
+        <Grid Grid.Row="0"
+              BackgroundColor="{StaticResource Filo.Surface.Overlay}">
 
-            <Slider x:Name="PlaybackSlider" Grid.Column="1" Minimum="0" DragStarted="OnSeekStarted" DragCompleted="OnSeekCompleted" />
+            <toolkit:MediaElement x:Name="MediaPlayer"
+                                  ShouldAutoPlay="False"
+                                  PositionChanged="OnPositionChanged"
+                                  MediaOpened="OnMediaOpened"
+                                  MediaEnded="OnMediaEnded"
+                                  HorizontalOptions="Fill"
+                                  VerticalOptions="Fill" />
 
-            <Label x:Name="TotalTimeLabel" Grid.Column="2" Text="0:00" />
+            <!-- Audio-only artwork. The frame mirrors the Image's own
+                 IsVisible via x:Reference so that hiding the Image from
+                 code-behind hides the frame with it - no extra C# needed. -->
+            <Border Style="{StaticResource Filo.ThumbFrame}"
+                    StrokeShape="RoundRectangle 16"
+                    WidthRequest="300"
+                    HeightRequest="300"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    IsVisible="{Binding Source={x:Reference MediaThumbnail}, Path=IsVisible}">
+
+                <Image x:Name="MediaThumbnail"
+                       IsVisible="False"
+                       WidthRequest="250"
+                       HeightRequest="250"
+                       Aspect="AspectFit"
+                       Source="{Binding ThumbnailUrl}" />
+            </Border>
         </Grid>
 
-        <HorizontalStackLayout HorizontalOptions="Center" Spacing="20">
-            <Button x:Name="PreviousButton" Text="Previous" Clicked="OnPreviousClicked"/>
-            <Button x:Name="PlayPauseButton" Text="Pause" Clicked="OnPlayPauseClicked"/>
-            <Button x:Name="NextButton" Text="Next" Clicked="OnNextClicked"/>
-            <Button x:Name="LoopButton" Text="Loop" Clicked="OnLoopButtonClicked" />
-        </HorizontalStackLayout>
+        <!-- ========== Transport bar ========== -->
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource Filo.Surface.Base}"
+                Stroke="{StaticResource Filo.Brush.Stroke}"
+                StrokeThickness="0"
+                StrokeShape="Rectangle"
+                Padding="0">
 
-        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="1" Value="1" ValueChanged="OnVolumeChanged"/>
+            <Grid RowDefinitions="Auto,Auto"
+                  MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
 
-        <Label Text="Playback Mode" />
+                <BoxView Grid.Row="0" Style="{StaticResource Filo.Divider}" VerticalOptions="Start" />
 
-        <Picker x:Name="PlaybackModePicker" SelectedIndexChanged="OnPlaybackModeChanged">
-            <Picker.Items>
-                <x:String>Normal</x:String>
-                <x:String>Shuffle All</x:String>
-                <x:String>Random No Repeat</x:String>
-                <x:String>True Random</x:String>
-            </Picker.Items>
-        </Picker>
-        
-    </VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="1"
+                                     Padding="{StaticResource Filo.Page.Padding}"
+                                     Spacing="14">
+
+                    <!-- Now playing -->
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="NOW PLAYING"
+                               Style="{StaticResource Caption2}"
+                               CharacterSpacing="2" />
+                        <Label Text="{Binding Title}"
+                               Style="{StaticResource Title2}"
+                               LineBreakMode="TailTruncation"
+                               MaxLines="1" />
+                    </VerticalStackLayout>
+
+                    <!-- Scrubber -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Label x:Name="CurrentTimeLabel"
+                               Grid.Column="0"
+                               Text="0:00"
+                               Style="{StaticResource Filo.TimeCode}" />
+
+                        <Slider x:Name="PlaybackSlider"
+                                Grid.Column="1"
+                                Minimum="0"
+                                DragStarted="OnSeekStarted"
+                                DragCompleted="OnSeekCompleted"
+                                VerticalOptions="Center" />
+
+                        <Label x:Name="TotalTimeLabel"
+                               Grid.Column="2"
+                               Text="0:00"
+                               Style="{StaticResource Filo.TimeCode}" />
+                    </Grid>
+
+                    <!-- Controls: transport centred, volume left, mode right -->
+                    <Grid ColumnDefinitions="*,Auto,*"
+                          ColumnSpacing="16">
+
+                        <!-- Volume -->
+                        <HorizontalStackLayout Grid.Column="0"
+                                               Spacing="8"
+                                               VerticalOptions="Center"
+                                               HorizontalOptions="Start">
+                            <Image Source="{StaticResource Filo.Icon.Volume}"
+                                   VerticalOptions="Center" />
+
+                            <Slider x:Name="VolumeSlider"
+                                    Minimum="0"
+                                    Maximum="1"
+                                    Value="1"
+                                    WidthRequest="130"
+                                    VerticalOptions="Center"
+                                    Style="{StaticResource Filo.Slider.Volume}"
+                                    ValueChanged="OnVolumeChanged" />
+                        </HorizontalStackLayout>
+
+                        <!-- Transport -->
+                        <HorizontalStackLayout Grid.Column="1"
+                                               Spacing="12"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center">
+
+                            <Button x:Name="PreviousButton"
+                                    ImageSource="{StaticResource Filo.Icon.Previous}"
+                                    ToolTipProperties.Text="Previous"
+                                    Style="{StaticResource Filo.Button.Transport}"
+                                    Clicked="OnPreviousClicked" />
+
+                            <Button x:Name="PlayPauseButton"
+                                    Text="Pause"
+                                    Style="{StaticResource Filo.Button.PlayPause}"
+                                    Clicked="OnPlayPauseClicked" />
+
+                            <Button x:Name="NextButton"
+                                    ImageSource="{StaticResource Filo.Icon.Next}"
+                                    ToolTipProperties.Text="Next"
+                                    Style="{StaticResource Filo.Button.Transport}"
+                                    Clicked="OnNextClicked" />
+
+                            <Button x:Name="LoopButton"
+                                    Text="Loop"
+                                    Style="{StaticResource Filo.Button.TransportPill}"
+                                    Clicked="OnLoopButtonClicked" />
+                        </HorizontalStackLayout>
+
+                        <!-- Playback mode -->
+                        <HorizontalStackLayout Grid.Column="2"
+                                               Spacing="8"
+                                               VerticalOptions="Center"
+                                               HorizontalOptions="End">
+
+                            <Image Source="{StaticResource Filo.Icon.Shuffle}"
+                                   VerticalOptions="Center" />
+
+                            <Border Style="{StaticResource Filo.InputShell}"
+                                    VerticalOptions="Center">
+                                <Picker x:Name="PlaybackModePicker"
+                                        WidthRequest="168"
+                                        SelectedIndexChanged="OnPlaybackModeChanged">
+                                    <Picker.Items>
+                                        <x:String>Normal</x:String>
+                                        <x:String>Shuffle All</x:String>
+                                        <x:String>Random No Repeat</x:String>
+                                        <x:String>True Random</x:String>
+                                    </Picker.Items>
+                                </Picker>
+                            </Border>
+                        </HorizontalStackLayout>
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+    </Grid>
 </ContentPage>

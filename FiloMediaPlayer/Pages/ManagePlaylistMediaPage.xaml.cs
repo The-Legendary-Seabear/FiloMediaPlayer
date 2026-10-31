@@ -71,17 +71,39 @@ public partial class ManagePlaylistMediaPage : ContentPage, IQueryAttributable
 
     private void UpdateMediaDisplay()
     {
+        // Presentation only: pull the segment styles from the Filo design
+        // system instead of hardcoding DodgerBlue/Gray. Assigning Style rather
+        // than BackgroundColor is deliberate - a direct BackgroundColor set
+        // outranks any style setter, which is what previously pinned these two
+        // buttons to colours unrelated to the rest of the app.
+        Style? selectedStyle = null;
+        Style? unselectedStyle = null;
+
+        var resources = Application.Current?.Resources;
+        if (resources is not null)
+        {
+            if (resources.TryGetValue("Filo.Button.SegmentSelected", out var s))
+            {
+                selectedStyle = s as Style;
+            }
+
+            if (resources.TryGetValue("Filo.Button.SegmentUnselected", out var u))
+            {
+                unselectedStyle = u as Style;
+            }
+        }
+
         if(_showingCurrentMedia)
         {
-            CurrentMediaButton.BackgroundColor = Colors.DodgerBlue;
-            AvailableMediaButton.BackgroundColor = Colors.Gray;
+            CurrentMediaButton.Style = selectedStyle;
+            AvailableMediaButton.Style = unselectedStyle;
             MediaListTitle.Text = "Showing Current Media";
             MediaCollection.ItemsSource = _currentMedia;
-        } 
+        }
         else
         {
-            CurrentMediaButton.BackgroundColor = Colors.Gray;
-            AvailableMediaButton.BackgroundColor = Colors.DodgerBlue;
+            CurrentMediaButton.Style = unselectedStyle;
+            AvailableMediaButton.Style = selectedStyle;
             MediaListTitle.Text = "Showing Available Media";
             MediaCollection.ItemsSource = _availableMedia;
         }

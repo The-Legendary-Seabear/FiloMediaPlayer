@@ -5,126 +5,144 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="FiloMediaPlayer.Components.ThumbnailPickerView">
 
-    <VerticalStackLayout
-        Spacing="15"
-        Padding="10">
+    <!-- ===================================================================
+         CONTRACT PRESERVED (ThumbnailPickerView.xaml.cs):
+           ThumbnailCollection .... ItemsSource and SelectedItem assigned in
+                                    code; SelectionMode MUST stay Single.
+           ThumbnailSearchBar ..... TextChanged handler.
+           SelectedThumbnailLabel . .Text assigned in code.
+           RemoveThumbnailButton .. Clicked handler.
+           Bindings: ImageUrl, Name on ThumbnailResponse.
 
-        <Label
-            Text="Choose Thumbnail"
-            FontSize="18"
-            FontAttributes="Bold" />
+         FIXED HERE: selection produced no visible highlight at all. The item
+         Border's Selected state set BackgroundColor, while the implicit
+         Border style (AppStyles.xaml) set the Background *brush* - and
+         Background always outranks BackgroundColor, so the highlight was
+         silently swallowed.
 
-        <!-- Search thumbnails -->
-        <SearchBar
-            x:Name="ThumbnailSearchBar"
-            Placeholder="Search thumbnails by title..." 
-            TextChanged="OnThumbnailSearchTextChanged"/>
+         The states below therefore drive Background (a Brush), never
+         BackgroundColor. That is deliberate: Background wins over
+         BackgroundColor unconditionally, so the highlight no longer depends
+         on which dictionary merged last or on what any implicit style sets.
+         Do not "simplify" these back to BackgroundColor.
+         =================================================================== -->
 
-        <!-- Horizontal thumbnail gallery -->
-        <CollectionView
-            x:Name="ThumbnailCollection"
-            HeightRequest="220"
-            SelectionMode="Single"
-            SelectionChanged="OnThumbnailSelectionChanged">
+    <VerticalStackLayout Spacing="12">
+
+        <Label Text="Thumbnail"
+               Style="{StaticResource Filo.SectionTitle}" />
+
+        <Border Style="{StaticResource Filo.InputShell}">
+            <SearchBar x:Name="ThumbnailSearchBar"
+                       Placeholder="Search thumbnails by title..."
+                       TextChanged="OnThumbnailSearchTextChanged" />
+        </Border>
+
+        <CollectionView x:Name="ThumbnailCollection"
+                        HeightRequest="212"
+                        SelectionMode="Single"
+                        SelectionChanged="OnThumbnailSelectionChanged">
 
             <CollectionView.ItemsLayout>
-                <LinearItemsLayout
-                    Orientation="Horizontal"
-                    ItemSpacing="12" />
+                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
             </CollectionView.ItemsLayout>
 
             <CollectionView.EmptyView>
-                <Label
-                    Text="No thumbnails found."
-                    HorizontalOptions="Center"
-                    VerticalOptions="Center" />
+                <Label Text="No thumbnails found."
+                       Style="{StaticResource Filo.EmptyState}" />
             </CollectionView.EmptyView>
-
 
             <CollectionView.ItemTemplate>
                 <DataTemplate>
 
-                    <Border
-            WidthRequest="175"
-            Padding="8"
-            Stroke="Transparent"
-            StrokeThickness="2"
-            StrokeShape="RoundRectangle 10"
-            BackgroundColor="Transparent">
+                    <Border WidthRequest="160"
+                            Padding="10"
+                            Background="{StaticResource Filo.Brush.Transparent}"
+                            Stroke="{StaticResource Filo.Brush.Transparent}"
+                            StrokeThickness="2"
+                            StrokeShape="RoundRectangle 14">
 
                         <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup Name="CommonStates">
+                            <VisualStateGroupList>
+                                <VisualStateGroup Name="CommonStates">
 
-                                <VisualState Name="Normal">
-                                    <VisualState.Setters>
-                                        <Setter Property="Stroke"
-                                    Value="Transparent" />
-                                        <Setter Property="BackgroundColor"
-                                    Value="Transparent" />
-                                    </VisualState.Setters>
-                                </VisualState>
+                                    <VisualState Name="Normal">
+                                        <VisualState.Setters>
+                                            <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Transparent}" />
+                                            <Setter Property="Background" Value="{StaticResource Filo.Brush.Transparent}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
 
-                                <VisualState Name="Selected">
-                                    <VisualState.Setters>
-                                        <Setter Property="Stroke"
-                                    Value="DodgerBlue" />
-                                        <Setter Property="BackgroundColor"
-                                    Value="#202C40" />
-                                    </VisualState.Setters>
-                                </VisualState>
+                                    <VisualState Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Stroke}" />
+                                            <Setter Property="Background" Value="{StaticResource Filo.Brush.Card}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
 
-                            </VisualStateGroup>
+                                    <!-- Violet border + violet-tinted fill -->
+                                    <VisualState Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter Property="Stroke" Value="{StaticResource Filo.Brush.Accent}" />
+                                            <Setter Property="Background" Value="{StaticResource Filo.Brush.AccentTint}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+
+                                </VisualStateGroup>
+                            </VisualStateGroupList>
                         </VisualStateManager.VisualStateGroups>
 
-                        <VerticalStackLayout Spacing="5">
+                        <VerticalStackLayout Spacing="8">
 
-                            <Border
-                    WidthRequest="140"
-                    HeightRequest="140"
-                    Padding="5"
-                    Stroke="Gray"
-                    StrokeThickness="1"
-                    StrokeShape="RoundRectangle 8">
+                            <Border Style="{StaticResource Filo.ThumbFrame}"
+                                    WidthRequest="138"
+                                    HeightRequest="138"
+                                    HorizontalOptions="Center">
 
-                                <Image
-                        Source="{Binding ImageUrl}"
-                        Aspect="AspectFit"
-                        HorizontalOptions="Fill"
-                        VerticalOptions="Fill" />
+                                <Grid>
+                                    <Image Source="{StaticResource Filo.Icon.ImagePlaceholder}"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
 
+                                    <!-- AspectFit, not AspectFill: this is a
+                                         picker, so the whole image must be
+                                         visible to choose by. The frame's
+                                         gradient fills the letterbox gaps. -->
+                                    <Image Source="{Binding ImageUrl}"
+                                           Aspect="AspectFit"
+                                           Margin="6"
+                                           HorizontalOptions="Fill"
+                                           VerticalOptions="Fill" />
+                                </Grid>
                             </Border>
 
-                            <Label
-                    Text="{Binding Name}"
-                    HorizontalTextAlignment="Center"
-                    LineBreakMode="TailTruncation"
-                    MaxLines="1" />
+                            <Label Text="{Binding Name}"
+                                   Style="{StaticResource Caption1}"
+                                   HorizontalTextAlignment="Center"
+                                   LineBreakMode="TailTruncation"
+                                   MaxLines="1" />
 
                         </VerticalStackLayout>
-
                     </Border>
 
                 </DataTemplate>
             </CollectionView.ItemTemplate>
-
-
         </CollectionView>
 
         <!-- Current selection -->
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <Label Grid.Column="0"
+                   x:Name="SelectedThumbnailLabel"
+                   Text="Selected: None"
+                   Style="{StaticResource Caption1}"
+                   VerticalOptions="Center"
+                   LineBreakMode="TailTruncation" />
 
-            <Label
-                Grid.Column="0"
-                x:Name="SelectedThumbnailLabel"
-                Text="Selected: None"
-                VerticalOptions="Center" />
-
-            <Button
-                Grid.Column="1"
-                Text="Remove"
-                x:Name="RemoveThumbnailButton" 
-                Clicked="OnRemoveThumbnailClicked"/>
-
+            <Button Grid.Column="1"
+                    x:Name="RemoveThumbnailButton"
+                    Text="Remove"
+                    Style="{StaticResource Filo.Button.Danger}"
+                    Clicked="OnRemoveThumbnailClicked" />
         </Grid>
 
     </VerticalStackLayout>

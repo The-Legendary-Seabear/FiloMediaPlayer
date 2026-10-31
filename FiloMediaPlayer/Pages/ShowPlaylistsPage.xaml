@@ -3,44 +3,186 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="FiloMediaPlayer.Pages.ShowPlaylistsPage"
              Title="Playlists">
-    <Grid>
-        <CollectionView x:Name="PlaylistUiCollection" HorizontalOptions="Fill" VerticalOptions="Fill">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <HorizontalStackLayout Spacing="10" Padding="10">
-                        <Image Source="{Binding ThumbnailUrl}" WidthRequest="60" HeightRequest="60" />
-                        <Label Text="{Binding Name}">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Tapped="OnPlaylistTapped" />
-                            </Label.GestureRecognizers>
-                        </Label>
-                        <Button Text="+" Clicked="onAddMediaClicked"/>
-                        <Button Text="Edit" Clicked="onEditPlaylistInfo" />
-                    </HorizontalStackLayout>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
 
-        <Grid IsVisible="False" x:Name="AddMediaOverlay">
-            <Border Padding="20" Margin="20"  WidthRequest="500" HeightRequest="500" HorizontalOptions="Center" VerticalOptions="Center">
-                <Grid RowDefinitions="Auto,*,Auto">
-                    <SearchBar x:Name="SearchMedia" TextChanged="OnSearchMediaTextChanged">
-                        
-                    </SearchBar>
-                    <CollectionView x:Name="AvailableMediaCollection" Grid.Row="1">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <HorizontalStackLayout>
-                                    <Label Text="{Binding Title}"></Label>
-                                    <Button Clicked="onAddMediaToPlaylistClicked" Text="+"/>
-                                </HorizontalStackLayout>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                    <Button Grid.Row="2" Text="Close" Clicked="OnCloseAddMediaOverlay" />
+    <!-- ===================================================================
+         CONTRACT PRESERVED (ShowPlaylistsPage.xaml.cs):
+           PlaylistUiCollection, AvailableMediaCollection, AddMediaOverlay,
+           SearchMedia  ........................ x:Name lookups
+           onAddMediaClicked, onEditPlaylistInfo,
+           onAddMediaToPlaylistClicked, OnCloseAddMediaOverlay  .. Button.Clicked
+           OnSearchMediaTextChanged ............ SearchBar.TextChanged
+           OnPlaylistTapped .................... MUST stay on a Label.
+
+         That last one is load-bearing: the handler casts
+         `sender is Label tappedLabel`, so moving the TapGestureRecognizer up
+         to the row Border would compile fine and then silently never
+         navigate. Instead the Label is stretched to fill its whole grid cell,
+         so the row *feels* clickable while the sender type is unchanged.
+         =================================================================== -->
+
+    <Grid>
+
+        <!-- ========== Playlist list ========== -->
+        <Grid RowDefinitions="Auto,*"
+              Padding="{StaticResource Filo.Page.Padding}"
+              RowSpacing="16"
+              MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
+
+            <VerticalStackLayout Grid.Row="0" Spacing="4">
+                <Label Text="Playlists"
+                       Style="{StaticResource Filo.PageTitle}" />
+                <Label Text="Tap a playlist to open it."
+                       Style="{StaticResource Caption1}" />
+            </VerticalStackLayout>
+
+            <CollectionView x:Name="PlaylistUiCollection"
+                            Grid.Row="1"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill">
+
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.EmptyView>
+                    <Label Text="No playlists yet.&#10;Create one from the home screen to get started."
+                           Style="{StaticResource Filo.EmptyState}" />
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+
+                        <Border Style="{StaticResource Filo.ListRow}">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+                                  ColumnSpacing="14">
+
+                                <!-- Artwork. The frame's gradient shows through
+                                     when ThumbnailUrl is null, so rows keep a
+                                     consistent silhouette either way. -->
+                                <Border Grid.Column="0"
+                                        Style="{StaticResource Filo.ThumbFrame}"
+                                        WidthRequest="{StaticResource Filo.Thumb.Row}"
+                                        HeightRequest="{StaticResource Filo.Thumb.Row}">
+
+                                    <Grid>
+                                        <Image Source="{StaticResource Filo.Icon.PlaylistPlaceholder}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+
+                                        <Image Source="{Binding ThumbnailUrl}"
+                                               Aspect="AspectFill"
+                                               HorizontalOptions="Fill"
+                                               VerticalOptions="Fill" />
+                                    </Grid>
+                                </Border>
+
+                                <!-- Tap target. Fills the cell so the whole
+                                     middle of the row is clickable. -->
+                                <Label Grid.Column="1"
+                                       Text="{Binding Name}"
+                                       Style="{StaticResource Filo.ItemTitle}"
+                                       HorizontalOptions="Fill"
+                                       VerticalOptions="Fill"
+                                       VerticalTextAlignment="Center">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPlaylistTapped" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+
+                                <Button Grid.Column="2"
+                                        Text="+"
+                                        ToolTipProperties.Text="Add media to this playlist"
+                                        Style="{StaticResource Filo.Button.IconAccent}"
+                                        VerticalOptions="Center"
+                                        Clicked="onAddMediaClicked" />
+
+                                <Button Grid.Column="3"
+                                        Text="Edit"
+                                        Style="{StaticResource Filo.Button.Ghost}"
+                                        VerticalOptions="Center"
+                                        Clicked="onEditPlaylistInfo" />
+                            </Grid>
+                        </Border>
+
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+        <!-- ========== "Add media" modal ========== -->
+        <Grid IsVisible="False"
+              x:Name="AddMediaOverlay"
+              BackgroundColor="{StaticResource Filo.Scrim}">
+
+            <Border Style="{StaticResource Filo.ModalSurface}"
+                    Margin="20"
+                    WidthRequest="540"
+                    MaximumHeightRequest="560"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+                    <!-- Dialog header -->
+                    <VerticalStackLayout Grid.Row="0" Padding="20,18,20,14" Spacing="2">
+                        <Label Text="Add media"
+                               Style="{StaticResource Title3}" />
+                        <Label Text="Pick tracks to add to this playlist."
+                               Style="{StaticResource Caption1}" />
+                    </VerticalStackLayout>
+
+                    <BoxView Grid.Row="1" Style="{StaticResource Filo.Divider}" />
+
+                    <Grid Grid.Row="2" RowDefinitions="Auto,*" Padding="20,14" RowSpacing="12">
+
+                        <Border Grid.Row="0" Style="{StaticResource Filo.InputShell}">
+                            <SearchBar x:Name="SearchMedia"
+                                       Placeholder="Search media..."
+                                       TextChanged="OnSearchMediaTextChanged" />
+                        </Border>
+
+                        <CollectionView x:Name="AvailableMediaCollection" Grid.Row="1">
+
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="6" />
+                            </CollectionView.ItemsLayout>
+
+                            <CollectionView.EmptyView>
+                                <Label Text="No media available to add."
+                                       Style="{StaticResource Filo.EmptyState}" />
+                            </CollectionView.EmptyView>
+
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Filo.ListRow}" Padding="12,8">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding Title}"
+                                                   Style="{StaticResource Filo.ItemTitle}" />
+
+                                            <Button Grid.Column="1"
+                                                    Text="+"
+                                                    Style="{StaticResource Filo.Button.IconAccent}"
+                                                    VerticalOptions="Center"
+                                                    Clicked="onAddMediaToPlaylistClicked" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+
+                    <!-- Dialog footer -->
+                    <Grid Grid.Row="3" Padding="20,0,20,18">
+                        <Button Text="Close"
+                                Style="{StaticResource Filo.Button.Secondary}"
+                                HorizontalOptions="End"
+                                Clicked="OnCloseAddMediaOverlay" />
+                    </Grid>
+
                 </Grid>
             </Border>
         </Grid>
+
     </Grid>
 </ContentPage>

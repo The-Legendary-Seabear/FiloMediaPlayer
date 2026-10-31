@@ -5,85 +5,119 @@
     x:Class="FiloMediaPlayer.Pages.ShowPlaylistSongs"
     Title="Songs">
 
-    <Grid RowDefinitions="Auto,*">
+    <!-- ===================================================================
+         CONTRACT PRESERVED (ShowPlaylistSongs.xaml.cs):
+           SongUiCollection, SortModePicker ..... x:Name lookups
+           OnSortModeChanged .................... Picker.SelectedIndexChanged
+           OnEditMediaClicked ................... Button.Clicked
+           OnMediaTapped ........................ MUST stay on a Label
+                                                  (handler casts sender is Label)
+           Picker.Items strings are reproduced EXACTLY. OnSortModeChanged
+           switches on SelectedItem?.ToString(), matching the literals
+           "Playlist Order" / "A → Z" / "Z → A" / "Reverse" - so retyping
+           "A → Z" with a plain "->" would fall through every case and
+           silently leave the sort mode unchanged.
+         =================================================================== -->
 
-        <!-- Sorting controls -->
-        <Grid
-            Grid.Row="0"
-            ColumnDefinitions="*,Auto"
-            Padding="10">
+    <Grid RowDefinitions="Auto,*"
+          Padding="{StaticResource Filo.Page.Padding}"
+          RowSpacing="16"
+          MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
 
-            <Picker
-                x:Name="SortModePicker"
-                Grid.Column="1"
-                Title="Sort"
-                WidthRequest="140"
-                HorizontalOptions="End"
-                VerticalOptions="Start"
-                SelectedIndexChanged="OnSortModeChanged">
+        <!-- Header + sort control -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="*,Auto"
+              ColumnSpacing="16">
 
-                <Picker.Items>
-                    <x:String>Playlist Order</x:String>
-                    <x:String>A → Z</x:String>
-                    <x:String>Z → A</x:String>
-                    <x:String>Reverse</x:String>
-                </Picker.Items>
+            <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                <Label Text="Tracks"
+                       Style="{StaticResource Filo.PageTitle}" />
+                <Label Text="Tap a track to play it."
+                       Style="{StaticResource Caption1}" />
+            </VerticalStackLayout>
 
-            </Picker>
+            <Border Grid.Column="1"
+                    Style="{StaticResource Filo.InputShell}"
+                    VerticalOptions="Center">
 
+                <Picker x:Name="SortModePicker"
+                        Title="Sort"
+                        WidthRequest="150"
+                        SelectedIndexChanged="OnSortModeChanged">
+                    <Picker.Items>
+                        <x:String>Playlist Order</x:String>
+                        <x:String>A → Z</x:String>
+                        <x:String>Z → A</x:String>
+                        <x:String>Reverse</x:String>
+                    </Picker.Items>
+                </Picker>
+            </Border>
         </Grid>
 
-        <!-- Media collection -->
-        <CollectionView
-            x:Name="SongUiCollection"
-            Grid.Row="1"
-            VerticalOptions="Fill"
-            HorizontalOptions="Fill">
+        <!-- Track list -->
+        <CollectionView x:Name="SongUiCollection"
+                        Grid.Row="1"
+                        VerticalOptions="Fill"
+                        HorizontalOptions="Fill">
+
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.EmptyView>
+                <Label Text="This playlist is empty.&#10;Add media to it from the playlists screen."
+                       Style="{StaticResource Filo.EmptyState}" />
+            </CollectionView.EmptyView>
 
             <CollectionView.ItemTemplate>
                 <DataTemplate>
 
-                    <Grid
-                        ColumnDefinitions="60,*,Auto"
-                        ColumnSpacing="12"
-                        Padding="10,6">
+                    <Border Style="{StaticResource Filo.ListRow}">
+                        <Grid ColumnDefinitions="Auto,*,Auto"
+                              ColumnSpacing="14">
 
-                        <!-- Media thumbnail -->
-                        <Image
-                            Grid.Column="0"
-                            Source="{Binding ThumbnailUrl}"
-                            WidthRequest="60"
-                            HeightRequest="60"
-                            Aspect="AspectFit" />
+                            <!-- Artwork with gradient + glyph fallback -->
+                            <Border Grid.Column="0"
+                                    Style="{StaticResource Filo.ThumbFrame}"
+                                    WidthRequest="{StaticResource Filo.Thumb.Row}"
+                                    HeightRequest="{StaticResource Filo.Thumb.Row}">
 
-                        <!-- Media title / playback -->
-                        <Label
-                            Grid.Column="1"
-                            Text="{Binding Title}"
-                            VerticalOptions="Center"
-                            LineBreakMode="TailTruncation">
+                                <Grid>
+                                    <Image Source="{StaticResource Filo.Icon.ThumbPlaceholder}"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
 
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Tapped="OnMediaTapped" />
-                            </Label.GestureRecognizers>
+                                    <Image Source="{Binding ThumbnailUrl}"
+                                           Aspect="AspectFill"
+                                           HorizontalOptions="Fill"
+                                           VerticalOptions="Fill" />
+                                </Grid>
+                            </Border>
 
-                        </Label>
+                            <!-- Tap target: stretched to fill the cell -->
+                            <Label Grid.Column="1"
+                                   Text="{Binding Title}"
+                                   Style="{StaticResource Filo.ItemTitle}"
+                                   HorizontalOptions="Fill"
+                                   VerticalOptions="Fill"
+                                   VerticalTextAlignment="Center"
+                                   LineBreakMode="TailTruncation">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnMediaTapped" />
+                                </Label.GestureRecognizers>
+                            </Label>
 
-                        <!-- Edit media -->
-                        <Button
-                            Grid.Column="2"
-                            Text="Edit"
-                            VerticalOptions="Center"
-                            Clicked="OnEditMediaClicked" />
-
-                    </Grid>
+                            <Button Grid.Column="2"
+                                    Text="Edit"
+                                    Style="{StaticResource Filo.Button.Ghost}"
+                                    VerticalOptions="Center"
+                                    Clicked="OnEditMediaClicked" />
+                        </Grid>
+                    </Border>
 
                 </DataTemplate>
             </CollectionView.ItemTemplate>
-
         </CollectionView>
 
     </Grid>
-
 </ContentPage>

@@ -7,44 +7,84 @@
     x:Class="FiloMediaPlayer.Pages.EditPlaylistPage"
     Title="Edit Playlist">
 
-    <Grid
-        Padding="20"
-        RowDefinitions="Auto,*,Auto"
-        RowSpacing="15">
+    <!-- Contract preserved: PlaylistNameEntry (.Text read/written in code),
+         ThumbnailPicker (SelectedThumbnailId / Thumbnails set in code),
+         OnManageMediaClicked, OnSaveChangesClicked. -->
 
-        <VerticalStackLayout
-            Grid.Row="0"
-            Spacing="10">
+    <Grid RowDefinitions="*,Auto">
 
-            <Label
-                Text="Playlist Name"
-                FontAttributes="Bold" />
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="{StaticResource Filo.Page.Padding}"
+                                 Spacing="20"
+                                 MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
 
-            <Entry
-                x:Name="PlaylistNameEntry"
-                Placeholder="Enter playlist name"
-                MaxLength="255" />
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Edit playlist"
+                           Style="{StaticResource Filo.PageTitle}" />
+                    <Label Text="Rename it, choose artwork, or change what's in it."
+                           Style="{StaticResource Caption1}" />
+                </VerticalStackLayout>
 
-        </VerticalStackLayout>
+                <!-- Details -->
+                <Border Style="{StaticResource Filo.Card}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Playlist name"
+                               Style="{StaticResource Filo.FieldLabel}" />
 
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Spacing="15">
+                        <Border Style="{StaticResource Filo.InputShell}">
+                            <Entry x:Name="PlaylistNameEntry"
+                                   Placeholder="Enter playlist name"
+                                   MaxLength="255" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
 
-                <components:ThumbnailPickerView
-                    x:Name="ThumbnailPicker" />
+                <!-- Artwork -->
+                <Border Style="{StaticResource Filo.Card}">
+                    <components:ThumbnailPickerView x:Name="ThumbnailPicker" />
+                </Border>
 
-                <Button
-                    Text="Manage Playlist Media"
-                    Clicked="OnManageMediaClicked" />
+                <!-- Contents -->
+                <Border Style="{StaticResource Filo.Card}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Tracks"
+                                   Style="{StaticResource Body1Strong}" />
+                            <Label Text="Add or remove media in this playlist."
+                                   Style="{StaticResource Caption1}" />
+                        </VerticalStackLayout>
+
+                        <Button Grid.Column="1"
+                                Text="Manage media"
+                                Style="{StaticResource Filo.Button.Secondary}"
+                                VerticalOptions="Center"
+                                Clicked="OnManageMediaClicked" />
+                    </Grid>
+                </Border>
 
             </VerticalStackLayout>
         </ScrollView>
 
-        <Button
-            Grid.Row="2"
-            Text="Save Changes"
-            Clicked="OnSaveChangesClicked" />
+        <!-- Sticky save bar -->
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource Filo.Surface.Base}"
+                Stroke="{StaticResource Filo.Brush.Stroke}"
+                StrokeThickness="0"
+                StrokeShape="Rectangle"
+                Padding="0">
+            <Grid RowDefinitions="Auto,Auto">
+                <BoxView Grid.Row="0" Style="{StaticResource Filo.Divider}" />
+
+                <Grid Grid.Row="1"
+                      Padding="{StaticResource Filo.Page.Padding}"
+                      MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
+                    <Button Text="Save changes"
+                            Style="{StaticResource Filo.Button.Primary}"
+                            HorizontalOptions="End"
+                            Clicked="OnSaveChangesClicked" />
+                </Grid>
+            </Grid>
+        </Border>
 
     </Grid>
-
 </ContentPage>

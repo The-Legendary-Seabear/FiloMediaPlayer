@@ -182,11 +182,31 @@ public partial class ManageMediaPlaylistsPage : ContentPage, IQueryAttributable
                 StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        CurrentPlaylistsButton.BackgroundColor =
-            _showingCurrentPlaylists ? Colors.DodgerBlue : Colors.Gray;
+        // Presentation only: see the matching note in ManagePlaylistMediaPage.
+        // Style, not BackgroundColor - a direct colour assignment would
+        // outrank the design-system style and reintroduce the mismatch.
+        Style? selectedStyle = null;
+        Style? unselectedStyle = null;
 
-        AvailablePlaylistsButton.BackgroundColor =
-            _showingCurrentPlaylists ? Colors.Gray : Colors.DodgerBlue;
+        var resources = Application.Current?.Resources;
+        if (resources is not null)
+        {
+            if (resources.TryGetValue("Filo.Button.SegmentSelected", out var s))
+            {
+                selectedStyle = s as Style;
+            }
+
+            if (resources.TryGetValue("Filo.Button.SegmentUnselected", out var u))
+            {
+                unselectedStyle = u as Style;
+            }
+        }
+
+        CurrentPlaylistsButton.Style =
+            _showingCurrentPlaylists ? selectedStyle : unselectedStyle;
+
+        AvailablePlaylistsButton.Style =
+            _showingCurrentPlaylists ? unselectedStyle : selectedStyle;
 
         OnPropertyChanged(nameof(PlaylistActionText));
     }

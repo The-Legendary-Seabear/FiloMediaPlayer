@@ -5,104 +5,113 @@
     x:Class="FiloMediaPlayer.Pages.ManagePlaylistMediaPage"
     x:Name="ManageMediaPage"
     Title="Manage Playlist Media">
-    
 
-    <Grid
-        Padding="20"
-        RowDefinitions="Auto,Auto,Auto,Auto,*"
-        RowSpacing="15">
+    <!-- ===================================================================
+         CONTRACT PRESERVED (ManagePlaylistMediaPage.xaml.cs):
+           x:Name="ManageMediaPage" on the PAGE is load-bearing.
 
-        <!-- Page heading -->
-        <Label
-            Grid.Row="0"
-            Text="Manage Playlist Media"
-            FontSize="24"
-            FontAttributes="Bold" />
+           This page does NOT set BindingContext, so the row button binds via
+           Path=MediaActionText with NO "BindingContext." prefix - unlike its
+           sibling ManageMediaPlaylistsPage. Reproduced exactly as-is.
 
-        <!-- Toggle between the two media lists -->
-        <Grid
-            Grid.Row="1"
-            ColumnDefinitions="*,*"
-            ColumnSpacing="10">
+           MediaListTitle keeps its x:Name: UpdateMediaDisplay() assigns
+           .Text = "Showing Current Media" / "Showing Available Media".
+           CurrentMediaButton / AvailableMediaButton now receive a Style from
+           that same method instead of a hardcoded BackgroundColor.
+         =================================================================== -->
 
-            <Button
-                Grid.Column="0"
-                x:Name="CurrentMediaButton"
-                Text="In Playlist"
-                Clicked="OnCurrentMediaClicked" />
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*"
+          Padding="{StaticResource Filo.Page.Padding}"
+          RowSpacing="16"
+          MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
 
-            <Button
-                Grid.Column="1"
-                x:Name="AvailableMediaButton"
-                Text="Available Media"
-                Clicked="OnAvailableMediaClicked" />
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Label Text="Playlist media"
+                   Style="{StaticResource Filo.PageTitle}" />
+            <Label Text="Add or remove tracks in this playlist."
+                   Style="{StaticResource Caption1}" />
+        </VerticalStackLayout>
 
+        <!-- Segmented toggle -->
+        <Grid Grid.Row="1"
+              ColumnDefinitions="*,*"
+              ColumnSpacing="10">
+
+            <Button Grid.Column="0"
+                    x:Name="CurrentMediaButton"
+                    Text="In Playlist"
+                    Style="{StaticResource Filo.Button.SegmentSelected}"
+                    Clicked="OnCurrentMediaClicked" />
+
+            <Button Grid.Column="1"
+                    x:Name="AvailableMediaButton"
+                    Text="Available Media"
+                    Style="{StaticResource Filo.Button.SegmentUnselected}"
+                    Clicked="OnAvailableMediaClicked" />
         </Grid>
 
-        <!-- Search the currently displayed list -->
-        <SearchBar
-            Grid.Row="2"
-            x:Name="MediaSearchBar"
-            Placeholder="Search media..."
-            TextChanged="OnMediaSearchTextChanged" />
+        <Border Grid.Row="2" Style="{StaticResource Filo.InputShell}">
+            <SearchBar x:Name="MediaSearchBar"
+                       Placeholder="Search media..."
+                       TextChanged="OnMediaSearchTextChanged" />
+        </Border>
 
-        <!-- Display the active list -->
-        <Label
-            Grid.Row="3"
-            x:Name="MediaListTitle"
-            Text="Media in Playlist"
-            FontAttributes="Bold"
-            FontSize="18" />
+        <Label Grid.Row="3"
+               x:Name="MediaListTitle"
+               Text="Media in Playlist"
+               Style="{StaticResource Filo.SectionTitle}" />
 
-        <CollectionView
-            Grid.Row="4"
-            x:Name="MediaCollection"
-            SelectionMode="None">
+        <CollectionView Grid.Row="4"
+                        x:Name="MediaCollection"
+                        SelectionMode="None">
+
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+            </CollectionView.ItemsLayout>
 
             <CollectionView.EmptyView>
-                <Label
-                    Text="No media found."
-                    HorizontalOptions="Center"
-                    VerticalOptions="Center" />
+                <Label Text="No media found."
+                       Style="{StaticResource Filo.EmptyState}" />
             </CollectionView.EmptyView>
 
             <CollectionView.ItemTemplate>
                 <DataTemplate>
 
-                    <Grid
-                        Padding="10"
-                        ColumnDefinitions="60,*,Auto"
-                        ColumnSpacing="10">
+                    <Border Style="{StaticResource Filo.ListRow}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
 
-                        <!-- Media thumbnail -->
-                        <Image
-                            Grid.Column="0"
-                            Source="{Binding ThumbnailUrl}"
-                            WidthRequest="55"
-                            HeightRequest="55"
-                            Aspect="AspectFill" />
+                            <Border Grid.Column="0"
+                                    Style="{StaticResource Filo.ThumbFrame}"
+                                    WidthRequest="{StaticResource Filo.Thumb.Row}"
+                                    HeightRequest="{StaticResource Filo.Thumb.Row}">
 
-                        <!-- Media title -->
-                        <Label
-                            Grid.Column="1"
-                            Text="{Binding Title}"
-                            VerticalOptions="Center"
-                            LineBreakMode="TailTruncation" />
+                                <Grid>
+                                    <Image Source="{StaticResource Filo.Icon.ThumbPlaceholder}"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
 
-                        <!-- Add or Remove -->
-                        <Button
-                            Grid.Column="2"
-                            Text="{Binding Source={x:Reference ManageMediaPage}, Path=MediaActionText}"
-                            Clicked="OnMediaActionClicked"
-                            VerticalOptions="Center" />
+                                    <Image Source="{Binding ThumbnailUrl}"
+                                           Aspect="AspectFill"
+                                           HorizontalOptions="Fill"
+                                           VerticalOptions="Fill" />
+                                </Grid>
+                            </Border>
 
-                    </Grid>
+                            <Label Grid.Column="1"
+                                   Text="{Binding Title}"
+                                   Style="{StaticResource Filo.ItemTitle}" />
+
+                            <Button Grid.Column="2"
+                                    Text="{Binding Source={x:Reference ManageMediaPage}, Path=MediaActionText}"
+                                    Style="{StaticResource Filo.Button.Ghost}"
+                                    VerticalOptions="Center"
+                                    Clicked="OnMediaActionClicked" />
+                        </Grid>
+                    </Border>
 
                 </DataTemplate>
             </CollectionView.ItemTemplate>
-
         </CollectionView>
 
     </Grid>
-
 </ContentPage>
