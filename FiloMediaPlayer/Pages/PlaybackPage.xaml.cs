@@ -4,6 +4,7 @@ using FiloMediaPlayer.DTOs;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using FiloMediaPlayer.Services;
 
 namespace FiloMediaPlayer.Pages;
 
@@ -11,7 +12,7 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
 {
     public int MediaFileId { get; private set; }
     public int PlaylistId { get; private set; }
-    private readonly HttpClient _httpClient;
+    private readonly FiloApiService _apiService;
     private readonly Random _random = new Random();
     private bool _isLoopEnabled = false;
     private bool _isPlaying = true;
@@ -40,18 +41,21 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         Reverse
     }
 
-    public PlaybackPage()
-	{
-		InitializeComponent();
-        _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri("https://localhost:7038/");
+    public PlaybackPage(FiloApiService apiService)
+    {
+        InitializeComponent();
+        _apiService = apiService;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
 
-        await LoadPlaylistOrder();
+        bool initialized = await LoadPlaylistOrder();
+
+        if (!initialized)
+            return;
+
         await LoadPlaybackMedia();
     }
 
@@ -73,37 +77,77 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         }
     }
 
+
     private async Task LoadPlaybackMedia()
     {
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await _httpClient.GetAsync($"api/media/{MediaFileId}/playback");
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            await DisplayAlertAsync("Error", "Something went wrong", "Close");
-            return;
+            using var response = await _apiService.GetWithRetryAsync(
+                $"api/media/{MediaFileId}/playback");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await ShowPlaybackAlertAsync(
+                    "Playback Error",
+                    "Unable to retrieve media information.");
+                return;
+            }
+
+            var playbackMedia = await response.Content
+                .ReadFromJsonAsync<PlaybackMediaResponse>();
+
+            if (playbackMedia == null ||
+                string.IsNullOrWhiteSpace(playbackMedia.PlaybackUrl))
+            {
+                await ShowPlaybackAlertAsync(
+                    "Playback Error",
+                    "The server returned invalid playback information.");
+                return;
+            }
+
+            // Update the player only after successfully retrieving the data.
+            _currentPlaybackMedia = playbackMedia;
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                BindingContext = playbackMedia;
+
+                MediaThumbnail.IsVisible =
+                    playbackMedia.ContentType?.StartsWith(
+                        "audio/",
+                        StringComparison.OrdinalIgnoreCase) == true;
+
+                MediaPlayer.Source = playbackMedia.PlaybackUrl;
+            });
         }
-        _currentPlaybackMedia = await response.Content.ReadFromJsonAsync<PlaybackMediaResponse>() ?? new PlaybackMediaResponse();
-
-        Debug.Print($"ContentType: {_currentPlaybackMedia.ContentType}");
-        Debug.Print($"ThumbnailUrl: {_currentPlaybackMedia.ThumbnailUrl}");
-
-        await MainThread.InvokeOnMainThreadAsync(() =>
+        catch (UnauthorizedAccessException)
         {
-            BindingContext = _currentPlaybackMedia;
+            await ShowPlaybackAlertAsync(
+                "Session Expired",
+                "Please log in again.");
+        }
+        catch (HttpRequestException)
+        {
+            await ShowPlaybackAlertAsync(
+    "Connection Error",
+    "Unable to contact the server.");
+        }
+        catch (TaskCanceledException)
+        {
+            await ShowPlaybackAlertAsync(
+                "Connection Timeout",
+                "The playback request timed out.");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Playback loading error: {ex}");
 
-            if (_currentPlaybackMedia.ContentType.StartsWith("audio/"))
-            {
-                MediaThumbnail.IsVisible = true;
-            }
-            else
-            {
-                MediaThumbnail.IsVisible = false;
-            }
-
-            MediaPlayer.Source = _currentPlaybackMedia.PlaybackUrl;
-        });
+            await ShowPlaybackAlertAsync(
+                "Playback Error",
+                "Unable to load this media.");
+        }
     }
+
 
     private void OnPlayPauseClicked(object sender, EventArgs e)
     {
@@ -321,47 +365,96 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         _isSeeking = false;
     }
 
-    private async Task LoadPlaylistOrder()
+
+    private async Task<bool> LoadPlaylistOrder()
     {
         if (_playlistOrder.Count == 0)
         {
-            var token = await SecureStorage.Default.GetAsync("accessToken");
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var response = await _httpClient.GetAsync($"api/playlists/{PlaylistId}/media");
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                await DisplayAlertAsync("Error", "Something went wrong", "Close");
-                return;
+                using var response = await _apiService.GetWithRetryAsync(
+                    $"api/playlists/{PlaylistId}/media");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    await ShowPlaybackAlertAsync(
+                        "Error",
+                        "Unable to retrieve the playlist order.");
+                    return false;
+                }
+
+                var media = await response.Content
+                    .ReadFromJsonAsync<List<MediaResponse>>();
+
+                if (media == null)
+                {
+                    await ShowPlaybackAlertAsync(
+                        "Error",
+                        "The server returned invalid playlist data.");
+                    return false;
+                }
+
+                _playlistOrder = media
+                    .Select(m => m.MediaFileId)
+                    .ToList();
             }
-            var media = await response.Content.ReadFromJsonAsync<List<MediaResponse>>();
-            if (media == null)
+            catch (UnauthorizedAccessException)
             {
-                await DisplayAlertAsync("Error", "Something went wrong", "Close");
-                return;
+                await ShowPlaybackAlertAsync(
+                    "Session Expired",
+                    "Please log in again.");
+                return false;
             }
+            catch (HttpRequestException)
+            {
+                await ShowPlaybackAlertAsync(
+    "Connection Error",
+    "Unable to contact the server.");
+                return false;
+            }
+            catch (TaskCanceledException)
+            {
+                await ShowPlaybackAlertAsync(
+                    "Connection Timeout",
+                    "The playlist request timed out.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Playlist order error: {ex}");
 
-            _playlistOrder = media.Select(m => m.MediaFileId).ToList();
+                await ShowPlaybackAlertAsync(
+                    "Error",
+                    "Unable to initialize the playlist.");
+                return false;
+            }
+        }
 
+        int startIndex = _playlistOrder.IndexOf(MediaFileId);
+
+        if (startIndex < 0)
+        {
+            await ShowPlaybackAlertAsync(
+                "Playback Error",
+                "The selected media was not found in the playlist.");
+
+            return false;
         }
 
         _playbackTimeline.Clear();
         _currentIndex = 0;
-
-        var tempIndex = _playlistOrder.IndexOf(MediaFileId);
-        if (tempIndex == -1)
-        {
-            return;
-        }
-
-        _currentIndex = 0;
         _liveIndex = 0;
 
-        for (int i = tempIndex; i < _playlistOrder.Count; i++)
+        for (int i = startIndex; i < _playlistOrder.Count; i++)
         {
             _playbackTimeline.Add(_playlistOrder[i]);
         }
 
+        UpdatePreviousButtonState();
+
+        return true;
     }
+
 
     private void OnPlaybackModeChanged(object sender, EventArgs e)
     {
@@ -500,4 +593,14 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         _isLoopEnabled = !_isLoopEnabled;
         LoopButton.Text = _isLoopEnabled ? "Loop On" : "Loop";
     }
+
+
+    private Task ShowPlaybackAlertAsync(string title, string message)
+    {
+        return MainThread.InvokeOnMainThreadAsync(
+            () => DisplayAlertAsync(title, message, "OK"));
+    }
+
+
+
 }

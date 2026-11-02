@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
+using FiloMediaPlayer.Services;
+using FiloMediaPlayer.Pages;
 
 namespace FiloMediaPlayer
 {
@@ -24,6 +26,29 @@ namespace FiloMediaPlayer
                 });
 
             builder.Services.AddSingleton<UserSession>();
+            builder.Services.AddSingleton<UserSession>();
+
+            builder.Services.AddHttpClient<FiloApiService>(client =>
+            {
+                client.BaseAddress = new Uri("https://localhost:7038/");
+                client.Timeout = TimeSpan.FromSeconds(15);
+            });
+
+            builder.Services.AddHttpClient("FiloAuth", client =>
+            {
+                client.BaseAddress = new Uri("https://localhost:7038/");
+                client.Timeout = TimeSpan.FromSeconds(15);
+            });
+
+            builder.Services.AddSingleton<AuthService>(services =>
+            {
+                var factory = services.GetRequiredService<IHttpClientFactory>();
+                return new AuthService(factory.CreateClient("FiloAuth"));
+            });
+
+            builder.Services.AddTransient<ShowPlaylistsPage>();
+            builder.Services.AddTransient<ShowPlaylistSongs>();
+            builder.Services.AddTransient<PlaybackPage>();
 
 #if DEBUG
             builder.Logging.AddDebug();

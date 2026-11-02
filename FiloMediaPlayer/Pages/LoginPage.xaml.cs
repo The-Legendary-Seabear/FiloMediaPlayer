@@ -18,61 +18,123 @@ public partial class LoginPage : ContentPage
         _userSession = userSession;
 	}
 
+
     private async void OnLoginButtonClicked(object sender, EventArgs e)
     {
-        await DisplayAlertAsync("Login", "Login Started", "Close");
-        string username = UsernameEntry.Text;
-        string password = PasswordEntry.Text;
+        if (sender is Button loginButton)
+            loginButton.IsEnabled = false;
 
-        if(string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        try
         {
-            await DisplayAlertAsync("Error", "Please enter both username and password.", "OK");
-            return;
-        }
+            string username = UsernameEntry.Text ?? "";
+            string password = PasswordEntry.Text ?? "";
 
-        LoginInformation info = new LoginInformation(username, password);
-        var response = await _httpClient.PostAsJsonAsync("api/auth/login", info);
-
-        if(response.IsSuccessStatusCode)
-        {
-            var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
-            if(loginResponse == null)
+            if (string.IsNullOrWhiteSpace(username) ||
+                string.IsNullOrWhiteSpace(password))
             {
-                await DisplayAlertAsync("Login", "Something Went Wrong", "Close");
+                await DisplayAlertAsync(
+                    "Error",
+                    "Please enter both username and password.",
+                    "OK");
                 return;
             }
 
-            await SecureStorage.Default.SetAsync("accessToken", loginResponse.AccessToken);
-            await SecureStorage.Default.SetAsync("refreshToken", loginResponse.RefreshToken);
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginResponse.AccessToken);
-            var getResponse = await _httpClient.GetAsync("api/auth/me");
-            if(getResponse.IsSuccessStatusCode) 
-            {
-                var currentUser = await getResponse.Content.ReadFromJsonAsync<CurrentUserResponse>();
-                if(currentUser == null)
-                {
-                    await DisplayAlertAsync("Error", "Could not load user information.", "Close");
-                    return;
-                }
+            LoginInformation info = new LoginInformation(username, password);
 
-                _userSession.UserId = currentUser.UserId;
-                _userSession.Username = currentUser.Username;
-                _userSession.Email = currentUser.Email;
-                //await DisplayAlertAsync("Success", _userSession.Username, "OK");
-                await Shell.Current.GoToAsync("HomePage");
-            }
-            else 
+            using var response = await _httpClient.PostAsJsonAsync(
+                "api/auth/login", info);
+
+            if (!response.IsSuccessStatusCode)
             {
-                await DisplayAlertAsync("Status", "Couldnt verify status code", "Close");
-            
+                await DisplayAlertAsync(
+                    "Login Failed",
+                    "Invalid credentials or unable to log in.",
+                    "OK");
+                return;
             }
 
-        } else
-        {
-            await DisplayAlertAsync("Login", "Login Failed", "Close");
+            var loginResponse =
+                await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+            if (loginResponse == null)
+            {
+                await DisplayAlertAsync(
+                    "Login Error",
+                    "The server returned an invalid response.",
+                    "OK");
+                return;
+            }
+
+            await SecureStorage.Default.SetAsync(
+                "accessToken", loginResponse.AccessToken);
+
+            await SecureStorage.Default.SetAsync(
+                "refreshToken", loginResponse.RefreshToken);
+
+            using var meRequest = new HttpRequestMessage(
+                HttpMethod.Get, "api/auth/me");
+
+            meRequest.Headers.Authorization =
+                new AuthenticationHeaderValue(
+                    "Bearer", loginResponse.AccessToken);
+
+            using var getResponse = await _httpClient.SendAsync(meRequest);
+
+            if (!getResponse.IsSuccessStatusCode)
+            {
+                await DisplayAlertAsync(
+                    "Login Error",
+                    "Unable to verify your account.",
+                    "OK");
+                return;
+            }
+
+            var currentUser =
+                await getResponse.Content
+                    .ReadFromJsonAsync<CurrentUserResponse>();
+
+            if (currentUser == null)
+            {
+                await DisplayAlertAsync(
+                    "Login Error",
+                    "Could not load user information.",
+                    "OK");
+                return;
+            }
+
+            _userSession.UserId = currentUser.UserId;
+            _userSession.Username = currentUser.Username;
+            _userSession.Email = currentUser.Email;
+
+            await Shell.Current.GoToAsync("HomePage");
         }
-
-        //await DisplayAlertAsync("Test", "Login button clicked", "OK");
+        catch (HttpRequestException)
+        {
+            await DisplayAlertAsync(
+                "Connection Error",
+                "Unable to connect to Filo's server. Check your connection and try again.",
+                "OK");
+        }
+        catch (TaskCanceledException)
+        {
+            await DisplayAlertAsync(
+                "Connection Timeout",
+                "The server took too long to respond. Please try again.",
+                "OK");
+        }
+        catch (Exception)
+        {
+            await DisplayAlertAsync(
+                "Login Error",
+                "An unexpected error occurred. Please try again.",
+                "OK");
+        }
+        finally
+        {
+            if (sender is Button loginsButton)
+                loginsButton.IsEnabled = true;
+        }
     }
+
 
 }
