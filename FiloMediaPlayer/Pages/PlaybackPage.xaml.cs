@@ -78,7 +78,8 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     }
 
 
-    private async Task LoadPlaybackMedia()
+
+    private async Task<bool> LoadPlaybackMedia()
     {
         try
         {
@@ -90,7 +91,8 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
                 await ShowPlaybackAlertAsync(
                     "Playback Error",
                     "Unable to retrieve media information.");
-                return;
+
+                return false;
             }
 
             var playbackMedia = await response.Content
@@ -102,11 +104,9 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
                 await ShowPlaybackAlertAsync(
                     "Playback Error",
                     "The server returned invalid playback information.");
-                return;
-            }
 
-            // Update the player only after successfully retrieving the data.
-            _currentPlaybackMedia = playbackMedia;
+                return false;
+            }
 
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
@@ -119,6 +119,9 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
 
                 MediaPlayer.Source = playbackMedia.PlaybackUrl;
             });
+
+            _currentPlaybackMedia = playbackMedia;
+            return true;
         }
         catch (UnauthorizedAccessException)
         {
@@ -129,8 +132,8 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         catch (HttpRequestException)
         {
             await ShowPlaybackAlertAsync(
-    "Connection Error",
-    "Unable to contact the server.");
+                "Connection Error",
+                "Unable to contact the server.");
         }
         catch (TaskCanceledException)
         {
@@ -146,7 +149,10 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
                 "Playback Error",
                 "Unable to load this media.");
         }
+
+        return false;
     }
+
 
 
     private void OnPlayPauseClicked(object sender, EventArgs e)
@@ -207,7 +213,15 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
 
     private async void OnPreviousClicked(object sender, EventArgs e)
     {
-        if(_currentIndex > 0)
+        if (_playlistOrder.Count == 0 || _playbackTimeline.Count == 0)
+            return;
+
+        var previousMediaId = MediaFileId;
+        var previousIndex = _currentIndex;
+        var previousLiveIndex = _liveIndex;
+        var previousTimeline = new List<int>(_playbackTimeline);
+
+        if (_currentIndex > 0)
         {
             _currentIndex--;
         } 
@@ -266,13 +280,31 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
             }
         }
 
-        UpdatePreviousButtonState();
         MediaFileId = _playbackTimeline[_currentIndex];
-        await LoadPlaybackMedia();
+
+        bool loaded = await LoadPlaybackMedia();
+
+        if (!loaded)
+        {
+            MediaFileId = previousMediaId;
+            _currentIndex = previousIndex;
+            _liveIndex = previousLiveIndex;
+            _playbackTimeline = previousTimeline;
+        }
+
+        UpdatePreviousButtonState();
     }
 
     private async Task MoveToNextSong()
     {
+        if (_playlistOrder.Count == 0 || _playbackTimeline.Count == 0)
+            return;
+
+        var previousMediaId = MediaFileId;
+        var previousIndex = _currentIndex;
+        var previousLiveIndex = _liveIndex;
+        var previousTimeline = new List<int>(_playbackTimeline);
+
         if (_currentPlaybackMode == PlaybackMode.Normal)
         {
             _currentIndex++;
@@ -335,9 +367,21 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         }
 
 
-        UpdatePreviousButtonState();
         MediaFileId = _playbackTimeline[_currentIndex];
-        await LoadPlaybackMedia();
+
+        bool loaded = await LoadPlaybackMedia();
+
+        if (!loaded)
+        {
+            // Restore the state from before Next was pressed.
+            MediaFileId = previousMediaId;
+            _currentIndex = previousIndex;
+            _liveIndex = previousLiveIndex;
+            _playbackTimeline = previousTimeline;
+        }
+
+        UpdatePreviousButtonState();
+
     }
 
     private void OnPositionChanged(object sender, MediaPositionChangedEventArgs e)

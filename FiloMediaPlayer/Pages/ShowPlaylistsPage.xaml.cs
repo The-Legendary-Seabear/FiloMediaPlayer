@@ -36,6 +36,7 @@ public partial class ShowPlaylistsPage : ContentPage
     {
         try
         {
+            
             using var response = await _apiService.GetWithRetryAsync(
                 "api/playlists");
 
