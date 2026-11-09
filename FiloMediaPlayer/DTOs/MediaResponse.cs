@@ -10,6 +10,7 @@ namespace FiloMediaPlayer.DTOs
         public string Title { get; set; } = string.Empty;
         public string OriginalFileName { get; set; } = string.Empty;
         public string S3ObjectKey { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
 
         public int? ThumbnailId { get; set; }
         public string? ThumbnailUrl { get; set; }

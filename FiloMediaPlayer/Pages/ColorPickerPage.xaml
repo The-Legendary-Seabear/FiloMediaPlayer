@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:components="clr-namespace:FiloMediaPlayer.Components"
+    x:Class="FiloMediaPlayer.Pages.ColorPickerPage"
+    BackgroundColor="{StaticResource Filo.Surface.Base}"
+    Title="Choose Color">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout
+                Padding="24"
+                Spacing="16"
+                MaximumWidthRequest="420"
+                HorizontalOptions="Center">
+
+                <Label
+                    Text="Choose Bookmark Color"
+                    Style="{StaticResource Title2}" />
+
+                <components:ColorWheelComponent
+                    x:Name="ColorWheel"
+                    HorizontalOptions="Fill" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid Grid.Row="1"
+              Padding="16"
+              ColumnDefinitions="*,*"
+              ColumnSpacing="12"
+              BackgroundColor="{StaticResource Filo.Surface.Base}"
+              MaximumWidthRequest="520">
+
+            <Button
+                Grid.Column="0"
+                Text="Cancel"
+                Clicked="OnCancelClicked" />
+
+            <Button
+                Grid.Column="1"
+                Text="Apply Color"
+                Clicked="OnApplyClicked" />
+
+        </Grid>
+
+    </Grid>
+</ContentPage>

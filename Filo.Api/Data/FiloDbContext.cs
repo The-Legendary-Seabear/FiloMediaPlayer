@@ -1,8 +1,10 @@
 ﻿using Filo.Api.Migrations;
 using Filo.Api.Models;
+using Filo.Api.Models.Bookmarks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace Filo.Api.Data
 {
@@ -17,10 +19,102 @@ namespace Filo.Api.Data
         public DbSet<Thumbnail> Thumbnails { get; set; }
         public DbSet<Playlist> Playlists { get; set; }
         public DbSet<PlaylistMedia> PlaylistMedia { get; set; }
+        public DbSet<ProcessingJob> ProcessingJobs { get; set; }
+        public DbSet<MediaBookmark> MediaBookmarks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+
+            // -------------------------
+            // ProcessingJob
+            // -------------------------
+
+            builder.Entity<ProcessingJob>(entity =>
+            {
+                entity.HasKey(j => j.ProcessingJobId);
+
+                entity.Property(j => j.JobType)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                entity.Property(j => j.Status)
+                    .HasConversion<string>()
+                    .HasMaxLength(20)
+                    .IsRequired();
+
+                entity.Property(j => j.Progress)
+                    .HasDefaultValue(0);
+
+                entity.Property(j => j.ParametersJson)
+                    .IsRequired();
+
+                entity.Property(j => j.WorkerId)
+                    .HasMaxLength(100);
+
+                entity.HasOne(j => j.OwnerUser)
+                    .WithMany()
+                    .HasForeignKey(j => j.OwnerUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(j => j.MediaFile)
+                    .WithMany()
+                    .HasForeignKey(j => j.MediaFileId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(j => j.OutputMediaFile)
+                    .WithMany()
+                    .HasForeignKey(j => j.OutputMediaFileId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(j => new
+                {
+                    j.Status,
+                    j.CreatedAt
+                });
+            });
+
+            //BookMark
+
+            builder.Entity<MediaBookmark>(entity =>
+            {
+                entity.HasKey(e => e.MediaBookmarkId);
+
+                entity.Property(e => e.Title)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(2000);
+
+                entity.Property(e => e.Color)
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.CreatedAt)
+                    .IsRequired();
+
+                entity.Property(e => e.UpdatedAt)
+                    .IsRequired();
+
+                entity.HasOne(e => e.MediaFile)
+                    .WithMany()
+                    .HasForeignKey(e => e.MediaFileId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.OwnerUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.OwnerUserId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasIndex(e => new
+                {
+                    e.OwnerUserId,
+                    e.MediaFileId,
+                    e.StartSeconds
+                });
+            });
+
 
             // -------------------------
             // MediaFile

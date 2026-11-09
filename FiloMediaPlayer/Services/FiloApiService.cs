@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Net.Http.Json;
 
 using System.Net.Http;
 
@@ -110,6 +111,135 @@ namespace FiloMediaPlayer.Services
 
             throw new InvalidOperationException("Unable to complete API request.");
         }
+
+        public async Task<HttpResponseMessage> PostAsync<T>(
+    string endpoint,
+    T data,
+    CancellationToken cancellationToken = default)
+        {
+            using var request = await CreateAuthenticatedRequestAsync(
+                HttpMethod.Post, endpoint);
+
+            request.Content = JsonContent.Create(data);
+
+            var failedToken = request.Headers.Authorization?.Parameter;
+
+            var response = await _httpClient.SendAsync(
+                request, cancellationToken);
+
+            if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
+            {
+                return response;
+            }
+
+            response.Dispose();
+
+            var newToken = await _authService.RefreshAccessTokenAsync(
+                failedToken ?? "");
+
+            if (string.IsNullOrEmpty(newToken))
+            {
+                throw new UnauthorizedAccessException(
+                    "Your session has expired. Please log in again.");
+            }
+
+            using var retryRequest = new HttpRequestMessage(
+                HttpMethod.Post, endpoint);
+
+            retryRequest.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer", newToken);
+
+            retryRequest.Content = JsonContent.Create(data);
+
+            return await _httpClient.SendAsync(
+                retryRequest, cancellationToken);
+        }
+
+
+        public async Task<HttpResponseMessage> PutAsync<T>(
+            string endpoint,
+            T data,
+            CancellationToken cancellationToken = default)
+        {
+            using var request = await CreateAuthenticatedRequestAsync(
+                HttpMethod.Put, endpoint);
+
+            request.Content = JsonContent.Create(data);
+
+            var failedToken = request.Headers.Authorization?.Parameter;
+
+            var response = await _httpClient.SendAsync(
+                request, cancellationToken);
+
+            if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
+                return response;
+
+            response.Dispose();
+
+            var newToken = await _authService.RefreshAccessTokenAsync(
+                failedToken ?? "");
+
+            if (string.IsNullOrEmpty(newToken))
+            {
+                throw new UnauthorizedAccessException(
+                    "Your session has expired. Please log in again.");
+            }
+
+            using var retryRequest = new HttpRequestMessage(
+                HttpMethod.Put, endpoint);
+
+            retryRequest.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer", newToken);
+
+            retryRequest.Content = JsonContent.Create(data);
+
+            return await _httpClient.SendAsync(
+                retryRequest, cancellationToken);
+        }
+
+
+
+        public async Task<HttpResponseMessage> DeleteAsync(
+            string endpoint,
+            CancellationToken cancellationToken = default)
+        {
+            using var request = await CreateAuthenticatedRequestAsync(
+                HttpMethod.Delete, endpoint);
+
+            var failedToken = request.Headers.Authorization?.Parameter;
+
+            var response = await _httpClient.SendAsync(
+                request, cancellationToken);
+
+            if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
+                return response;
+
+            response.Dispose();
+
+            var newToken = await _authService.RefreshAccessTokenAsync(
+                failedToken ?? "");
+
+            if (string.IsNullOrEmpty(newToken))
+            {
+                throw new UnauthorizedAccessException(
+                    "Your session has expired. Please log in again.");
+            }
+
+            using var retryRequest = new HttpRequestMessage(
+                HttpMethod.Delete, endpoint);
+
+            retryRequest.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer", newToken);
+
+            return await _httpClient.SendAsync(
+                retryRequest, cancellationToken);
+        }
+
+
+
 
 
     }

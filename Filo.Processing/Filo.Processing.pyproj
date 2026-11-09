@@ -21,8 +21,18 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="api_client.py" />
+    <Compile Include="config.py" />
+    <Compile Include="converter.py" />
+    <Compile Include="downloader.py" />
     <Compile Include="Filo.Processing.py" />
     <Compile Include="processor_test.py" />
+    <Compile Include="test_converter.py" />
+    <Compile Include="test_download.py" />
+    <Compile Include="test_processing_pipeline.py" />
+    <Compile Include="test_upload.py" />
+    <Compile Include="uploader.py" />
+    <Compile Include="worker.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

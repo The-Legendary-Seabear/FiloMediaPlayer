@@ -89,6 +89,54 @@ namespace Filo.Api.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Filo.Api.Models.MediaBookmark", b =>
+                {
+                    b.Property<int>("MediaBookmarkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MediaBookmarkId"));
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<double?>("EndSeconds")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("MediaFileId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OwnerUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("StartSeconds")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("MediaBookmarkId");
+
+                    b.HasIndex("MediaFileId");
+
+                    b.HasIndex("OwnerUserId", "MediaFileId", "StartSeconds");
+
+                    b.ToTable("MediaBookmarks");
+                });
+
             modelBuilder.Entity("Filo.Api.Models.MediaFile", b =>
                 {
                     b.Property<int>("MediaFileId")
@@ -185,6 +233,77 @@ namespace Filo.Api.Migrations
                     b.HasIndex("MediaFileId");
 
                     b.ToTable("PlaylistMedia");
+                });
+
+            modelBuilder.Entity("Filo.Api.Models.ProcessingJob", b =>
+                {
+                    b.Property<int>("ProcessingJobId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ProcessingJobId"));
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("JobType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("LastHeartbeatAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("MediaFileId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("OutputMediaFileId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OwnerUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ParametersJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Progress")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("WorkerId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("ProcessingJobId");
+
+                    b.HasIndex("MediaFileId");
+
+                    b.HasIndex("OutputMediaFileId");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("ProcessingJobs");
                 });
 
             modelBuilder.Entity("Filo.Api.Models.Thumbnail", b =>
@@ -346,6 +465,25 @@ namespace Filo.Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Filo.Api.Models.MediaBookmark", b =>
+                {
+                    b.HasOne("Filo.Api.Models.MediaFile", "MediaFile")
+                        .WithMany()
+                        .HasForeignKey("MediaFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Filo.Api.Models.ApplicationUser", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("MediaFile");
+
+                    b.Navigation("OwnerUser");
+                });
+
             modelBuilder.Entity("Filo.Api.Models.MediaFile", b =>
                 {
                     b.HasOne("Filo.Api.Models.Thumbnail", "Thumbnail")
@@ -399,6 +537,31 @@ namespace Filo.Api.Migrations
                     b.Navigation("MediaFile");
 
                     b.Navigation("Playlist");
+                });
+
+            modelBuilder.Entity("Filo.Api.Models.ProcessingJob", b =>
+                {
+                    b.HasOne("Filo.Api.Models.MediaFile", "MediaFile")
+                        .WithMany()
+                        .HasForeignKey("MediaFileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Filo.Api.Models.MediaFile", "OutputMediaFile")
+                        .WithMany()
+                        .HasForeignKey("OutputMediaFileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Filo.Api.Models.ApplicationUser", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MediaFile");
+
+                    b.Navigation("OutputMediaFile");
+
+                    b.Navigation("OwnerUser");
                 });
 
             modelBuilder.Entity("Filo.Api.Models.Thumbnail", b =>

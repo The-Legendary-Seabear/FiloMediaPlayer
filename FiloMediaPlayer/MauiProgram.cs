@@ -26,9 +26,14 @@ namespace FiloMediaPlayer
                 });
 
             builder.Services.AddSingleton<UserSession>();
-            builder.Services.AddSingleton<UserSession>();
 
             builder.Services.AddHttpClient<FiloApiService>(client =>
+            {
+                client.BaseAddress = new Uri("https://localhost:7038/");
+                client.Timeout = TimeSpan.FromSeconds(15);
+            });
+
+            builder.Services.AddHttpClient<RegisterPage>(client =>
             {
                 client.BaseAddress = new Uri("https://localhost:7038/");
                 client.Timeout = TimeSpan.FromSeconds(15);

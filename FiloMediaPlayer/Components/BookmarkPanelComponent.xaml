@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiloMediaPlayer.Components.BookmarkPanelComponent">
+
+    <Border
+        BackgroundColor="{StaticResource Filo.Surface.Base}"
+        Stroke="{StaticResource Filo.Brush.Stroke}"
+        StrokeThickness="1"
+        Padding="16">
+
+        <VerticalStackLayout Spacing="12">
+
+            <!-- Header -->
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  ColumnSpacing="12">
+
+                <Button
+                    x:Name="ToggleBookmarksButton"
+                    Grid.Column="0"
+                    Text="Bookmarks (0) ▼"
+                    HorizontalOptions="Start"
+                    Clicked="OnToggleBookmarksClicked" />
+
+                <Button
+                    x:Name="AddBookmarkButton"
+                    Grid.Column="1"
+                    Text="+ Add"
+                    Clicked="OnAddBookmarkClicked" />
+
+            </Grid>
+
+            <!-- Expandable content -->
+            <VerticalStackLayout
+                x:Name="BookmarkContent"
+                IsVisible="False"
+                Spacing="12">
+
+                <Grid ColumnDefinitions="*,Auto"
+                      ColumnSpacing="10">
+
+                    <Entry
+                        x:Name="BookmarkSearchEntry"
+                        Grid.Column="0"
+                        Placeholder="Search bookmarks..."
+                        TextChanged="OnBookmarkSearchChanged" />
+
+                    <Picker
+                        x:Name="BookmarkSortPicker"
+                        Grid.Column="1"
+                        WidthRequest="150"
+                        SelectedIndexChanged="OnBookmarkSortChanged">
+
+                        <Picker.Items>
+                            <x:String>Time</x:String>
+                            <x:String>Time Desc</x:String>
+                            <x:String>Title</x:String>
+                            <x:String>Title Desc</x:String>
+                        </Picker.Items>
+
+                    </Picker>
+                </Grid>
+
+                <!-- Bookmark list -->
+                <CollectionView
+                    x:Name="BookmarkList"
+                    HeightRequest="220"
+                    SelectionMode="Single"
+                    SelectionChanged="OnBookmarkSelected">
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid
+                                Padding="8"
+                                ColumnDefinitions="Auto,*,Auto"
+                                ColumnSpacing="12">
+
+                                <BoxView
+                                    Grid.Column="0"
+                                    WidthRequest="4"
+                                    Color="{Binding Color}" />
+
+                                <VerticalStackLayout
+                                    Grid.Column="1"
+                                    Spacing="3">
+
+                                    <Label
+                                        Text="{Binding Title}"
+                                        FontAttributes="Bold" />
+
+                                    <Label
+                                        Text="{Binding DisplayTime}"
+                                        FontSize="12" />
+
+                                    <Label
+                                        Text="{Binding Description}"
+                                        FontSize="12"
+                                        LineBreakMode="TailTruncation"
+                                        MaxLines="2" />
+
+                                </VerticalStackLayout>
+
+                                <Button
+                                    Grid.Column="2"
+                                    Text="•••"
+                                    CommandParameter="{Binding .}"
+                                    Clicked="OnBookmarkOptionsClicked" />
+
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                </CollectionView>
+
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </Border>
+</ContentView>

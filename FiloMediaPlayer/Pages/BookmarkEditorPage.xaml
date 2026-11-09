@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiloMediaPlayer.Pages.BookmarkEditorPage"
+    BackgroundColor="{StaticResource Filo.Surface.Base}">
+
+    <Grid RowDefinitions="*,Auto"
+          RowSpacing="0">
+
+        <!-- Scrollable editor content -->
+        <ScrollView Grid.Row="0">
+
+            <VerticalStackLayout
+                Padding="16"
+                Spacing="16"
+                MaximumWidthRequest="520">
+
+                <!-- Header -->
+                <Grid ColumnDefinitions="*,Auto"
+                      ColumnSpacing="12">
+
+                    <VerticalStackLayout Spacing="5">
+
+                        <Label
+                            x:Name="EditorTitleLabel"
+                            Text="Add Bookmark"
+                            Style="{StaticResource Title2}" />
+
+                        <Label
+                            Text="Capture a moment or section while your media plays."
+                            Style="{StaticResource Caption2}"
+                            LineBreakMode="WordWrap" />
+
+                    </VerticalStackLayout>
+
+                    <Button
+                        Grid.Column="1"
+                        Text="✕"
+                        VerticalOptions="Start"
+                        ToolTipProperties.Text="Close bookmark editor"
+                        Clicked="OnCancelClicked" />
+
+                </Grid>
+
+                <!-- Current playback position -->
+                <Border
+                    BackgroundColor="{StaticResource Filo.Surface.Overlay}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 12"
+                    Padding="14">
+
+                    <VerticalStackLayout Spacing="6">
+
+                        <Label
+                            Text="CURRENT PLAYBACK POSITION"
+                            Style="{StaticResource Caption2}" />
+
+                        <Label
+                            x:Name="CurrentPositionLabel"
+                            Text="00:00:00"
+                            FontSize="24"
+                            FontAttributes="Bold" />
+
+                        <Label
+                            Text="Use the main player's controls to find your position."
+                            Style="{StaticResource Caption2}"
+                            LineBreakMode="WordWrap" />
+
+                    </VerticalStackLayout>
+
+                </Border>
+
+                <!-- Bookmark title -->
+                <VerticalStackLayout Spacing="6">
+
+                    <Label Text="Bookmark Title" />
+
+                    <Entry
+                        x:Name="BookmarkTitleEntry"
+                        Placeholder="Enter a bookmark title"
+                        MaxLength="255" />
+
+                </VerticalStackLayout>
+
+                <!-- Bookmark type -->
+                <VerticalStackLayout Spacing="8">
+
+                    <Label Text="Bookmark Type" />
+
+                    <Grid ColumnDefinitions="*,*"
+                          ColumnSpacing="10">
+
+                        <Button
+                            x:Name="PointBookmarkButton"
+                            Grid.Column="0"
+                            Text="Point"
+                            Clicked="OnPointBookmarkClicked" />
+
+                        <Button
+                            x:Name="SectionBookmarkButton"
+                            Grid.Column="1"
+                            Text="Section"
+                            Clicked="OnSectionBookmarkClicked" />
+
+                    </Grid>
+
+                </VerticalStackLayout>
+
+                <!-- Start timestamp -->
+                <VerticalStackLayout Spacing="6">
+
+                    <Label Text="Start Time" />
+
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="8">
+
+                        <Entry
+                            x:Name="StartTimeEntry"
+                            Grid.Column="0"
+                            Placeholder="00:00:00"
+                            Keyboard="Text"
+                            VerticalOptions="Center" />
+
+                        <Button
+                            Grid.Column="1"
+                            Text="Set Start"
+                            Clicked="OnSetStartClicked" />
+
+                    </Grid>
+
+                </VerticalStackLayout>
+
+                <!-- Optional end timestamp for sections -->
+                <VerticalStackLayout
+                    x:Name="EndTimeContainer"
+                    IsVisible="False"
+                    Spacing="6">
+
+                    <Label Text="End Time" />
+
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="8">
+
+                        <Entry
+                            x:Name="EndTimeEntry"
+                            Grid.Column="0"
+                            Placeholder="00:00:00"
+                            Keyboard="Text"
+                            VerticalOptions="Center" />
+
+                        <Button
+                            Grid.Column="1"
+                            Text="Set End"
+                            Clicked="OnSetEndClicked" />
+
+                    </Grid>
+
+                </VerticalStackLayout>
+
+                <!-- Timestamp help -->
+                <Label
+                    Text="Play, pause, or seek to a position, then capture it. You can also adjust timestamps manually."
+                    Style="{StaticResource Caption2}"
+                    LineBreakMode="WordWrap" />
+
+                <!-- Description -->
+                <VerticalStackLayout Spacing="6">
+
+                    <Label Text="Description (Optional)" />
+
+                    <Editor
+                        x:Name="BookmarkDescriptionEditor"
+                        Placeholder="Add notes about this bookmark..."
+                        AutoSize="TextChanges"
+                        HeightRequest="100"
+                        MaxLength="2000" />
+
+                </VerticalStackLayout>
+
+                <!-- Color selection -->
+                <VerticalStackLayout Spacing="10">
+
+                    <Label Text="Bookmark Color" />
+
+                    <Border
+                        Stroke="{StaticResource Filo.Brush.Stroke}"
+                        StrokeThickness="1"
+                        Padding="12"
+                        StrokeShape="RoundRectangle 12">
+
+                        <Grid ColumnDefinitions="Auto,*,Auto"
+                              ColumnSpacing="12">
+
+                            <Border
+                                x:Name="BookmarkColorPreview"
+                                Grid.Column="0"
+                                WidthRequest="36"
+                                HeightRequest="36"
+                                BackgroundColor="#8B5CF6"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 8" />
+
+                            <VerticalStackLayout
+                                Grid.Column="1"
+                                VerticalOptions="Center"
+                                Spacing="2">
+
+                                <Label Text="Selected Color" />
+
+                                <Label
+                                    x:Name="BookmarkColorHexLabel"
+                                    Text="Default"
+                                    Style="{StaticResource Caption2}" />
+
+                            </VerticalStackLayout>
+
+                            <Button
+                                Grid.Column="2"
+                                Text="Choose"
+                                Clicked="OnChooseColorClicked" />
+
+                        </Grid>
+
+                    </Border>
+
+                    <Button
+                        Text="Reset to Default"
+                        HorizontalOptions="Start"
+                        Clicked="OnResetColorClicked" />
+
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+
+        </ScrollView>
+
+        <!-- Fixed Save / Cancel controls -->
+        <Border
+            Grid.Row="1"
+            BackgroundColor="{StaticResource Filo.Surface.Base}"
+            Stroke="{StaticResource Filo.Brush.Stroke}"
+            StrokeThickness="1"
+            Padding="12">
+
+            <Grid ColumnDefinitions="*,*"
+                  ColumnSpacing="12"
+                  MaximumWidthRequest="520">
+
+                <Button
+                    Grid.Column="0"
+                    Text="Cancel"
+                    Clicked="OnCancelClicked" />
+
+                <Button
+                    x:Name="SaveBookmarkButton"
+                    Grid.Column="1"
+                    Text="Save Bookmark"
+                    Clicked="OnSaveBookmarkClicked" />
+
+            </Grid>
+
+        </Border>
+
+    </Grid>
+
+</ContentView>

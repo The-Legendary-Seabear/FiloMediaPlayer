@@ -62,6 +62,61 @@
                     </Grid>
                 </Border>
 
+
+                <!-- Media conversion -->
+                <Border Style="{StaticResource Filo.Card}">
+                    <VerticalStackLayout Spacing="12">
+
+                        <Label Text="Convert media"
+               Style="{StaticResource Body1Strong}" />
+
+                        <Label Text="Create a converted copy of this media file. The original will be preserved."
+               Style="{StaticResource Caption1}" />
+
+                        <Label Text="Output format"
+               Style="{StaticResource Filo.FieldLabel}" />
+
+                        <Border Style="{StaticResource Filo.InputShell}">
+                            <Picker x:Name="ConversionFormatPicker" Title="Select output format" SelectedIndexChanged="OnConversionFormatChanged" />
+                        </Border>
+
+                        <VerticalStackLayout x:Name="VideoCodecSection"
+                             Spacing="8"
+                             IsVisible="False">
+
+                            <Label Text="Video codec"
+                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Picker x:Name="VideoCodecPicker"
+                        Title="Select video codec" />
+                            </Border>
+
+                        </VerticalStackLayout>
+
+                        <Button x:Name="ConvertMediaButton"
+                Text="Convert media"
+                Style="{StaticResource Filo.Button.Primary}"
+                Clicked="OnConvertMediaClicked" />
+
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Processing status"
+                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Label x:Name="ConversionStatusLabel"
+                   Text="No conversion started."
+                   Style="{StaticResource Caption1}" />
+
+                            <ActivityIndicator x:Name="ConversionActivityIndicator"
+                               IsRunning="False"
+                               IsVisible="False"
+                               HorizontalOptions="Start" />
+                        </VerticalStackLayout>
+
+                    </VerticalStackLayout>
+                </Border>
+
+
             </VerticalStackLayout>
         </ScrollView>
 

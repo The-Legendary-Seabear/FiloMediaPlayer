@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FiloMediaPlayer.Pages.RegisterPage"
+             Title="Register">
+
+    <ScrollView>
+        <Grid Padding="{StaticResource Filo.Page.Padding}"
+              RowDefinitions="*,Auto,*">
+
+            <VerticalStackLayout Grid.Row="1"
+                                 Spacing="24"
+                                 WidthRequest="400"
+                                 MaximumWidthRequest="400"
+                                 HorizontalOptions="Center">
+
+                <VerticalStackLayout Spacing="2"
+                                     HorizontalOptions="Center">
+                    <Label Text="Filo"
+                           Style="{StaticResource Display}"
+                           TextColor="{StaticResource Filo.Accent.Hover}"
+                           HorizontalTextAlignment="Center" />
+
+                    <Label Text="MEDIA PLAYER"
+                           Style="{StaticResource Caption2}"
+                           CharacterSpacing="4"
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <Border Style="{StaticResource Filo.Card}"
+                        Padding="24">
+
+                    <VerticalStackLayout Spacing="18">
+
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Create your account"
+                                   Style="{StaticResource Title2}" />
+
+                            <Label Text="Start building your personal media library."
+                                   Style="{StaticResource Caption1}" />
+                        </VerticalStackLayout>
+
+                        <!-- Username -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Username"
+                                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Entry x:Name="UsernameEntry"
+                                       Placeholder="Choose a username"
+                                       ReturnType="Next" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Email -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Email"
+                                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Entry x:Name="EmailEntry"
+                                       Placeholder="Enter your email"
+                                       Keyboard="Email"
+                                       ReturnType="Next" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Password -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Password"
+                                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Entry x:Name="PasswordEntry"
+                                       Placeholder="Choose a password"
+                                       IsPassword="True"
+                                       ReturnType="Next" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Confirm password -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Confirm password"
+                                   Style="{StaticResource Filo.FieldLabel}" />
+
+                            <Border Style="{StaticResource Filo.InputShell}">
+                                <Entry x:Name="ConfirmPasswordEntry"
+                                       Placeholder="Re-enter your password"
+                                       IsPassword="True"
+                                       ReturnType="Done" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Button x:Name="RegisterButton"
+                                Text="Create account"
+                                Style="{StaticResource Filo.Button.Primary}"
+                                Clicked="OnRegisterClicked"
+                                HorizontalOptions="Fill"
+                                Margin="0,4,0,0" />
+
+                        <Button Text="Already have an account? Sign in"
+                                Clicked="OnBackToLoginClicked"
+                                HorizontalOptions="Fill"
+                                BackgroundColor="Transparent" />
+
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

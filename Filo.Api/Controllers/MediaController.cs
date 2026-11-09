@@ -72,6 +72,7 @@ namespace Filo.Api.Controllers
             media.UserId = userId;
             media.OriginalFileName = file.FileName;
             media.S3ObjectKey = awsPath;
+            media.ContentType = file.ContentType;
 
             _context.MediaFiles.Add(media);
             await _context.SaveChangesAsync();
@@ -162,11 +163,11 @@ namespace Filo.Api.Controllers
                 };
 
                 var imageUrl = _cloudStorage.GetPreSignedURL(request);
-                var mediaResponseWithThumbnail = new MediaResponse { MediaFileId = media.MediaFileId, Title = media.Title, ThumbnailId = media.ThumbnailId, ThumbnailUrl = imageUrl, OriginalFileName = media.OriginalFileName, };
+                var mediaResponseWithThumbnail = new MediaResponse { MediaFileId = media.MediaFileId, Title = media.Title, ThumbnailId = media.ThumbnailId, ThumbnailUrl = imageUrl, OriginalFileName = media.OriginalFileName, ContentType = media.ContentType };
                 return Ok(mediaResponseWithThumbnail);
                 }
 
-            var mediaResponseWithoutThumbnail = new MediaResponse { MediaFileId = media.MediaFileId, Title = media.Title, ThumbnailId = media.ThumbnailId, OriginalFileName = media.OriginalFileName, };
+            var mediaResponseWithoutThumbnail = new MediaResponse { MediaFileId = media.MediaFileId, Title = media.Title, ThumbnailId = media.ThumbnailId, OriginalFileName = media.OriginalFileName, ContentType = media.ContentType };
 
             return Ok(mediaResponseWithoutThumbnail);
         }

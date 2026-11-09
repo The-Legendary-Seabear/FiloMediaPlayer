@@ -1,4 +1,5 @@
 @Filo.Api_HostAddress = http://localhost:5066
+@WorkerApiKey = 6bc0f727da1763e8d421ad5b513f6fa07fed2ba5f2a018f15a1a7e19b73ffdd0
 
 GET {{Filo.Api_HostAddress}}/weatherforecast/
 Accept: application/json
@@ -28,7 +29,7 @@ Content-Type: application/json
 ###
 
 GET https://localhost:7038/api/auth/me
-Authorization: Bearer CfDJ8HONPaBNbJJCg95OLrN772oo4c-bsOFZ2mOuOSRj56L3-_Aoz0PGEl3KIotReDroXYVsAg_SoLJnuamGUKPyM07hgWbmVfAFe4vxBFFUumsP5rh3Drgslg1WcL9nPtrE_696gIWbWrIFLi6C-JC2ATTItTSeiEDTCqDVjPt-RVdUnkldmAeFaZ6I0Xi6yr1BlS3cHXGIV0eHwwnd_6L6rDrLRYA9MmZkm0SmVURTDchkHR3OTdalWZh51mOKbnzayszba5SmqaaEQgkheSm37l9c3qANSpiw5eCtzYNmMNs27p1Ts6GHIdVLeuZhrveHBEI9sFoGCwxbikiUP8VK2n0KzozmQTw8NyPJBHJSdOZSAf47a-33i_gfmfgqPEjRKUFzzytTSTDXBAlH6nFBQQRTICVNtvTa8NKpe5qP0F7lfZZZEPPiChSM5Onf8sRCodidWJhGzwHwRpWUYyGkd1r3tKQJBFe55hHlKAwhFYBfYTr4380pmtQWRrEDSo8lrq-vP1SwNDZicgNljAsiuxj-sbKEhK-QzNqPFvM4SrTjpP51nQK_RwCy0ZNmlU3DPVo1I3IENV6632Mi5OEONjr0DD6dUeeEEQqTf-k7AQux
+Authorization: Bearer CfDJ8HONPaBNbJJCg95OLrN772qzZnHgOvZWvPT8X5GY0oDh9Z0qnL6CRXHEOwpbDWsBV9_wyL2vLr50IHcwoYAH4QH34_apo3-zqcGUPxhmbAvadR3FfzWFtk4IdjleKkbYnjpqCFScY5PRz7uwOjZcFupzw8A-crGbA6IHR-ClwnCQyb9D81ObghqkzzgNaO_kXhnilLOvUhcCTmzK_mY9Xyxjx2jEE6t3syTccJINRWMsPWRyXYmXgtZU3zsrVRB5vcmPf1r7_COnx2GHkg1SkNJKdf7uthHmEBFV8ZiwHjob3dvzGYuE5rorU56LQUjzy-cmeSFLpzf0adbGatcDHLdOULeh5zqBFSFuTkqahYoRDWEY_QdlqYVnmY3wBjoeJqrEEW1PK5qy0OraKmAeIYX1lP9qVdX20irhBTW3MR6t2ywAUJtox_tIK0s2M_lTayXzvX4UYmtlPZTywF3lqHgrRLMp4rKQbFrSq6DudgFzpqza-a-9yR7F2SrJrKLsKWFiEPE8p4KaVfMcTye5TPjyoC7osMi5GONEueiISQ5DoV_NveufPRwILv22IexYTCbze0HEFi_FnOTzw5IFEP6R4BhBkg3GgsvE7ln6hoWE
 
 ###
 
@@ -38,3 +39,130 @@ Content-Type: application/json
 {
   "refreshToken": "CfDJ8HONPaBNbJJCg95OLrN772parkWBTIi1ONf_QqMAET-pG4OLJuZ97DkV3cCcEFWkDu6-wDblStc4fx7BGaQBBBp472-dhNyqQcmNavdeNhUrbybOTCeUDgjxW4uWVwy_JuYZ4Epu4L_LNGJAaNOpK1Hx7JBvuDDTrZrFeWFyN2ZIqnS9lU_EDhXtrOkPXS6K4V2EgxzkWKBW7HBxEsGMMY2zdMusbnwN2nMLAYtTOcpNmEbbVRUmOAGSCKWUqz1fqpmvyHNnLt7fFl9_uMDKpY2Oc2zYuNKsKHp7betWq83XExBSbdPRIGO6Q9xOAUmgKUmu9ZUUo0RfiC0YT34D-mHHAnB6FNungJQL69zYvKfKj5pupAckpiWjOevignBEPB4P7RaLnxgbi9-54FTZEbIOuUNy9pj1YtvhhISZF1kOIQEwhP7eOIlMbBaeSDcwLCt7-OvS6DT8aPxbRnNYfL5HJIvyPnmHbh_xktLQPe-E8KVkz03YeBVMu63H8QZJr3DtV0YIN2o6d4BNdWgxfpayGd2bv23z2VJXFqWI_jXe6LM0i2UmBIaa_YVooi1mmhIcAT3w7snvIt_3_l0mg638oRxAETtcQfTcQoqnw1LI"
 }
+
+###
+
+  
+POST https://localhost:7038/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "",
+  "email": "not-an-email",
+  "password": "Password123!"
+}
+
+###
+
+POST https://localhost:7038/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "FiloTestUser",
+  "email": "filotest@example.com",
+  "password": "password"
+}
+
+###
+
+
+POST https://localhost:7038/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "FiloRegistrationTest",
+  "email": "filoregistrationtest@example.com",
+  "password": "Testing123!"
+}
+
+###
+POST https://localhost:7038/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "TestUser",
+  "password": "TestPassword123!"
+}
+
+###
+
+POST https://localhost:7038/api/processing-jobs/conversion
+Content-Type: application/json
+Authorization: Bearer CfDJ8HONPaBNbJJCg95OLrN772q6hnmgW8mcsfTiOikg-XMxZcDMwsLIEfq3g_ntgcNmesOvGfdM2tT1evhSrxIU14WHj2EKrqQw6EgmmL4SV8g5d2paJoum48KZ3koyzjQ0B5TgflZwBfN6hFAWmXpLyE5QyiQ3pobS8NMLfCAQQ8SlzZyJXvEFb6SA4jhQrpvYZ71saK6Fpjz0uaRvLPuM7s4z_5bgqSFRWW_LX-qvr9kJPwKtkZAA_IxD6-5MeOeqe-raljWSKvrz2g6AjMsP1ajAx0h0SpauhAP-sd0n2LFyG0TK61c5f7VZvteZlHwiMQ7hX8AsaLup5pU7DrpIutSR7BQ8XLfzhfafls9IhcHu7P5PDmob6Hugm61uaYsna1sG_n9TZuzTisHRBmdO4HsrB07MlnUm3EWfcByxo3vl0GO9ol_5P91JxMQuwPJ5ChHXVa2cGS4Tn3nhKbdSNtX4kYFO80mMI25GcJNAtrf7gHa3V_Pd2f1521l5mrD8h7pDCI1t3bMErFpoHxy7haRr5QzSZLJywg8u0VBE67Cfv3w_wVs-tzONhLBsrFSZw0-54EutDWz9cVOYptPwGxpueS068gpMiLpZGPL-Cckk
+
+{
+  "mediaFileId": 2,
+  "targetFormat": "mp3"
+}
+
+###
+GET https://localhost:7038/api/processing-jobs/1
+Authorization: Bearer CfDJ8HONPaBNbJJCg95OLrN772qHNCqSckzZR1hF2W_K2pz7MN0__WIA-sLn7pOBVdIrdWj3mYGDNl5_BAEIa0uDp0Zb6k7iBTny5Wxq2mUz1Hx7p3UHUp_GXtSnF_ZcAEM4MO__l4ljvS-VzoCvUX27ZsKz3riMFNNxMP5Mjk4SngDr6devEahlwds8Hls2BWXK5DBs1zL5eu5sYrwGH-Wue3fOFnfCZb07akJ3tX_lkl0Vy6HdDx0wsGOGPf1_gNBWF9LS4-kAfOtixQrmxavJ-JZ-cKRJXfgjDeM9Mv7YPYzYpSzEoP07P8lre4ZmOhqkLZrcGQZylAuXpyWppnn2GmST-g_E0peJLhSDTbqH1z1vul7tq4TiHmYjgimfV4wo-KLBuTGLjdsF7bb9hqrCU4cmdGr4QwnZtEavoaOEl76KBl024ZirL6Rq4E6-7OmkMqGH2_wJ0nNtKaF4KQSdAbCdjQGLKHTxphiFLOzTpHoHG-nf1kTo2rC5VGsY87dGDKgPvlMsYCaJnY3GPGCqlB5UOvxf61K83bh9iaVSgNf1j0RvL5tTnnIZf4B9nP_64MS-HkFO6TNtrMh0eNVEy3PSbXAVCiDhBqHZE1WG7E36
+
+### Claim next processing job
+POST {{Filo.Api_HostAddress}}/api/processing-jobs/claim
+Content-Type: application/json
+X-Worker-Key: {{WorkerApiKey}}
+
+{
+    "workerId": "python-worker-1"
+}
+
+### Send worker heartbeat
+POST {{Filo.Api_HostAddress}}/api/processing-jobs/1/heartbeat
+Content-Type: application/json
+X-Worker-Key: {{WorkerApiKey}}
+
+{
+    "workerId": "python-worker-1"
+}
+
+### Complete processing job
+POST {{Filo.Api_HostAddress}}/api/processing-jobs/1/complete
+X-Worker-Key: {{WorkerApiKey}}
+Content-Type: application/json
+
+{
+  "workerId": "python-worker-1"
+}
+
+### Fail processing job
+POST {{Filo.Api_HostAddress}}/api/processing-jobs/2/fail
+X-Worker-Key: {{WorkerApiKey}}
+Content-Type: application/json
+
+{
+  "workerId": "python-worker-1",
+  "errorMessage": "Test failure: simulated FFmpeg processing error."
+}
+
+###
+POST {{Filo.Api_HostAddress}}/api/processing-jobs/4/source
+X-Worker-Key: {{WorkerApiKey}}
+Content-Type: application/json
+
+{
+  "workerId": "python-worker-1"
+}
+
+###
+POST {{Filo.Api_HostAddress}}/api/processing-jobs/4/output-upload
+X-Worker-Key: {{WorkerApiKey}}
+Content-Type: application/json
+
+{
+  "workerId": "python-worker-1"
+}
+
+###
+POST {{Filo.Api_HostAddress}}/api/processing-jobs/4/finalize-output
+X-Worker-Key: {{WorkerApiKey}}
+Content-Type: application/json
+
+{
+  "workerId": "python-worker-1"
+}
+
+###
+GET {{Filo.Api_HostAddress}}/api/media/4
+Authorization: Bearer CfDJ8HONPaBNbJJCg95OLrN772qzZnHgOvZWvPT8X5GY0oDh9Z0qnL6CRXHEOwpbDWsBV9_wyL2vLr50IHcwoYAH4QH34_apo3-zqcGUPxhmbAvadR3FfzWFtk4IdjleKkbYnjpqCFScY5PRz7uwOjZcFupzw8A-crGbA6IHR-ClwnCQyb9D81ObghqkzzgNaO_kXhnilLOvUhcCTmzK_mY9Xyxjx2jEE6t3syTccJINRWMsPWRyXYmXgtZU3zsrVRB5vcmPf1r7_COnx2GHkg1SkNJKdf7uthHmEBFV8ZiwHjob3dvzGYuE5rorU56LQUjzy-cmeSFLpzf0adbGatcDHLdOULeh5zqBFSFuTkqahYoRDWEY_QdlqYVnmY3wBjoeJqrEEW1PK5qy0OraKmAeIYX1lP9qVdX20irhBTW3MR6t2ywAUJtox_tIK0s2M_lTayXzvX4UYmtlPZTywF3lqHgrRLMp4rKQbFrSq6DudgFzpqza-a-9yR7F2SrJrKLsKWFiEPE8p4KaVfMcTye5TPjyoC7osMi5GONEueiISQ5DoV_NveufPRwILv22IexYTCbze0HEFi_FnOTzw5IFEP6R4BhBkg3GgsvE7ln6hoWE

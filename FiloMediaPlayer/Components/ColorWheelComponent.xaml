@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<ContentView
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiloMediaPlayer.Components.ColorWheelComponent">
+
+    <VerticalStackLayout Spacing="14"
+                         Padding="12">
+
+        <!-- Interactive color wheel -->
+        <GraphicsView
+            x:Name="WheelView"
+            WidthRequest="260"
+            HeightRequest="260"
+            HorizontalOptions="Center"
+            StartInteraction="OnWheelInteraction"
+            DragInteraction="OnWheelInteraction" />
+
+        <!-- Saturation -->
+        <Grid ColumnDefinitions="*,Auto">
+            <Label Text="Saturation" />
+            <Label x:Name="SaturationLabel"
+                   Grid.Column="1"
+                   Text="100%" />
+        </Grid>
+
+        <Slider x:Name="SaturationSlider"
+                Minimum="0"
+                Maximum="100"
+                Value="100"
+                ValueChanged="OnSliderChanged" />
+
+        <!-- Brightness -->
+        <Grid ColumnDefinitions="*,Auto">
+            <Label Text="Brightness" />
+            <Label x:Name="BrightnessLabel"
+                   Grid.Column="1"
+                   Text="100%" />
+        </Grid>
+
+        <Slider x:Name="BrightnessSlider"
+                Minimum="0"
+                Maximum="100"
+                Value="100"
+                ValueChanged="OnSliderChanged" />
+
+        <!-- Selected color -->
+        <Border StrokeThickness="0"
+                Padding="12"
+                StrokeShape="RoundRectangle 10">
+
+            <Grid ColumnDefinitions="Auto,*"
+                  ColumnSpacing="12">
+
+                <Border x:Name="SelectedColorPreview"
+                        WidthRequest="40"
+                        HeightRequest="40"
+                        BackgroundColor="#FF0000"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 8" />
+
+                <Label x:Name="HexColorLabel"
+                       Grid.Column="1"
+                       Text="#FF0000"
+                       VerticalOptions="Center"
+                       FontAttributes="Bold" />
+            </Grid>
+        </Border>
+
+    </VerticalStackLayout>
+</ContentView>
