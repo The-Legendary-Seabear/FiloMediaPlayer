@@ -1,12 +1,13 @@
 
 using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Views;
+using FiloMediaPlayer.Components;
 using FiloMediaPlayer.DTOs;
 using FiloMediaPlayer.Models.Bookmarks;
 using FiloMediaPlayer.Services;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using FiloMediaPlayer.Components;
 
 namespace FiloMediaPlayer.Pages;
 
@@ -50,6 +51,17 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     public PlaybackPage(FiloApiService apiService)
     {
         InitializeComponent();
+
+        MediaPlayer.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(MediaPlayer.CurrentState))
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"MediaElement state: {MediaPlayer.CurrentState}"
+                );
+            }
+        };
+
         BookmarkTimelineGraphics.Drawable = _bookmarkTimelineDrawable;
         _apiService = apiService;
 
@@ -336,7 +348,12 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
                         "audio/",
                         StringComparison.OrdinalIgnoreCase) == true;
 
+#if WINDOWS
+            InspectWindowsPlayer();
+#endif
+
                 MediaPlayer.Source = playbackMedia.PlaybackUrl;
+                //MediaPlayer.Source = MediaSource.FromFile(@"C:\Users\akohn\Downloads\Elden Ring - Putrescent Knight.mov");
             });
 
             _currentPlaybackMedia = playbackMedia;
@@ -403,6 +420,9 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
             _bookmarkTimelineDrawable.DurationSeconds = MediaPlayer.Duration.TotalSeconds;
             BookmarkTimelineGraphics.Invalidate();
             TotalTimeLabel.Text = $"{(int)MediaPlayer.Duration.TotalMinutes}:{MediaPlayer.Duration.Seconds:D2}";
+
+            
+
             MediaPlayer.Play();
             _isPlaying = true;
             PlayPauseButton.Text = "Pause";
@@ -1031,5 +1051,81 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         return TimeSpan.FromSeconds(Math.Floor(seconds))
             .ToString(@"hh\:mm\:ss");
     }
+
+
+
+    //-----------------------------------------WINDOWS-----------------------------------------------------------------------------------------------------------------------------------------
+
+
+private bool _normalizationEffectAdded = false;
+
+#if WINDOWS
+
+private void InspectWindowsPlayer()
+{
+    var platformView = MediaPlayer.Handler?.PlatformView;
+
+    if (platformView is not Microsoft.UI.Xaml.Controls.Grid grid)
+    {
+        Debug.WriteLine(
+            "Normalization: Native Windows view not found.");
+        return;
+    }
+
+    var playerElement = grid.Children
+        .OfType<Microsoft.UI.Xaml.Controls.MediaPlayerElement>()
+        .FirstOrDefault();
+
+    if (playerElement?.MediaPlayer == null)
+    {
+        Debug.WriteLine(
+            "Normalization: Native MediaPlayer not found.");
+        return;
+    }
+
+    var nativePlayer = playerElement.MediaPlayer;
+
+    nativePlayer.MediaFailed += (sender, args) =>
+{
+    Debug.WriteLine(
+        $"Normalization: Native player failed: {args.Error}");
+
+    Debug.WriteLine(
+        $"Normalization: Error message: {args.ErrorMessage}");
+};
+
+    Debug.WriteLine(
+        "Normalization: Native Windows MediaPlayer found!");
+
+    if (_normalizationEffectAdded)
+        return;
+
+    try
+    {
+        var configuration =
+            new Windows.Foundation.Collections.PropertySet
+            {
+                ["GainDb"] = 6.0
+            };
+
+        nativePlayer.AddAudioEffect(
+            "Filo.AudioEffects.Windows.NormalizationAudioEffect",
+            false,
+            configuration);
+
+        _normalizationEffectAdded = true;
+
+        Debug.WriteLine(
+            "Normalization: AddAudioEffect completed.");
+    }
+    catch (Exception ex)
+    {
+        Debug.WriteLine(
+            $"Normalization: Effect activation failed: {ex}");
+    }
+}
+#endif
+
+
 
 }

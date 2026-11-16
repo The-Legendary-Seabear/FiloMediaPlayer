@@ -26,4 +26,14 @@ public partial class HomePage : ContentPage
 	{
         await Shell.Current.GoToAsync("UploadThumbnailPage");
     }
+
+
+    private async void OnMediaGraftingButton(
+        object sender,
+        EventArgs e)
+    {
+        await Shell.Current.GoToAsync(
+            nameof(MediaGraftingPage));
+    }
+
 }

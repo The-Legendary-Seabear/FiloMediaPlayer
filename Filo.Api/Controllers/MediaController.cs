@@ -28,7 +28,8 @@ namespace Filo.Api.Controllers
 
         }
 
-        [RequestSizeLimit(500_000_000)]
+        [RequestSizeLimit(6_000_000_000)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 6_000_000_000)]
         [HttpPost("upload")]
         public async Task<IActionResult> UploadMedia([FromForm]IFormFile file, [FromForm]string name)
         {
@@ -67,12 +68,19 @@ namespace Filo.Api.Controllers
                 return BadRequest();
             }
 
+            var contentType = file.ContentType;
+
+            if (fileExtension.Equals(".mov", StringComparison.OrdinalIgnoreCase))
+            {
+                contentType = "video/quicktime";
+            }
+
             MediaFile media = new MediaFile();
             media.Title = name;
             media.UserId = userId;
             media.OriginalFileName = file.FileName;
             media.S3ObjectKey = awsPath;
-            media.ContentType = file.ContentType;
+            media.ContentType = contentType;
 
             _context.MediaFiles.Add(media);
             await _context.SaveChangesAsync();
@@ -265,7 +273,61 @@ namespace Filo.Api.Controllers
         }
 
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllMedia()
+        {
+            if (!int.TryParse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var mediaFiles = await _context.MediaFiles
+                .AsNoTracking()
+                .Where(m => m.UserId == userId)
+                .Include(m => m.Thumbnail)
+                .OrderBy(m => m.Title)
+                .ToListAsync();
+
+            var bucketName = _configuration["AWS:BucketName"];
+
+            if (string.IsNullOrWhiteSpace(bucketName))
+                return StatusCode(500, "S3 bucket is not configured.");
+
+            var results = new List<MediaResponse>();
+
+            foreach (var media in mediaFiles)
+            {
+                string? thumbnailUrl = null;
+
+                if (media.Thumbnail != null)
+                {
+                    var request = new GetPreSignedUrlRequest
+                    {
+                        BucketName = bucketName,
+                        Key = media.Thumbnail.S3ObjectKey,
+                        Expires = DateTime.UtcNow.AddMinutes(30)
+                    };
+
+                    thumbnailUrl = _cloudStorage.GetPreSignedURL(request);
+                }
+
+                results.Add(new MediaResponse
+                {
+                    MediaFileId = media.MediaFileId,
+                    Title = media.Title,
+                    OriginalFileName = media.OriginalFileName,
+                    ContentType = media.ContentType,
+                    ThumbnailId = media.ThumbnailId,
+                    ThumbnailUrl = thumbnailUrl
+                });
+            }
+
+            return Ok(results);
+        }
+
 
     }
-    
+
 }

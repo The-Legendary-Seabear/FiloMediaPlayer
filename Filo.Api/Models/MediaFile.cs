@@ -20,6 +20,19 @@
 
         public double? DurationSeconds { get; set; }
 
+        public double? IntegratedLufs { get; set; }
+
+        public double? TruePeakDbfs { get; set; }
+
+        public double? LoudnessRangeLu { get; set; }
+
+        public double? LoudnessThresholdLufs { get; set; }
+
+        public double? NormalizationGainDb { get; set; }
+
+        public DateTime? LoudnessAnalyzedAt { get; set; }
+
+
         public DateTime UploadedAt { get; set; }
 
         public ApplicationUser User { get; set; } = null!;

@@ -1,11 +1,24 @@
-using Filo.Api.Data;
-using Microsoft.EntityFrameworkCore;
 using Amazon.S3;
+using Filo.Api.Data;
 using Filo.Api.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 6_000_000_000L;
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 6_000_000_000L;
+});
+
 
 builder.Services.AddDefaultAWSOptions(
     builder.Configuration.GetAWSOptions());

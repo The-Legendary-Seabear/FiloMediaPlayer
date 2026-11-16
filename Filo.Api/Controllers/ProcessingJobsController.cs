@@ -137,6 +137,173 @@ public class ProcessingJobsController : ControllerBase
         });
     }
 
+
+    [HttpPost("grafting")]
+    public async Task<IActionResult> CreateMediaGrafting(
+        [FromBody] CreateMediaGraftingJobRequest request)
+    {
+        if (!int.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out int userId))
+        {
+            return Unauthorized();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Title) ||
+            request.Title.Trim().Length > 255)
+        {
+            return BadRequest("A valid output title is required.");
+        }
+
+        if (request.MediaFileIds == null ||
+            request.MediaFileIds.Count < 2)
+        {
+            return BadRequest(
+                "Select at least two media files.");
+        }
+
+        if (request.MediaFileIds.Count > 20)
+        {
+            return BadRequest(
+                "A maximum of 20 media files is supported.");
+        }
+
+        if (request.MediaFileIds.Distinct().Count() !=
+            request.MediaFileIds.Count)
+        {
+            return BadRequest(
+                "Duplicate media files are not supported yet.");
+        }
+
+        var mediaType = request.MediaType?
+            .Trim()
+            .ToLowerInvariant();
+
+        if (mediaType != "audio" && mediaType != "video")
+        {
+            return BadRequest("Invalid media type.");
+        }
+
+        var mediaFiles = await _context.MediaFiles
+            .AsNoTracking()
+            .Where(m =>
+                m.UserId == userId &&
+                request.MediaFileIds.Contains(m.MediaFileId))
+            .ToListAsync();
+
+        if (mediaFiles.Count != request.MediaFileIds.Count)
+        {
+            return BadRequest(
+                "One or more media files are unavailable.");
+        }
+
+        bool allCompatible = mediaFiles.All(m =>
+            m.ContentType != null &&
+            m.ContentType.StartsWith(
+                mediaType + "/",
+                StringComparison.OrdinalIgnoreCase));
+
+        if (!allCompatible)
+        {
+            return BadRequest(
+                "All selected files must match the grafting type.");
+        }
+
+        var parametersJson = JsonSerializer.Serialize(new
+        {
+            Title = request.Title.Trim(),
+            MediaType = mediaType,
+            MediaFileIds = request.MediaFileIds
+        });
+
+        var job = new ProcessingJob
+        {
+            OwnerUserId = userId,
+            MediaFileId = null,
+            JobType = "MediaGrafting",
+            Status = ProcessingJobStatus.Queued,
+            Progress = 0,
+            ParametersJson = parametersJson,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.ProcessingJobs.Add(job);
+        await _context.SaveChangesAsync();
+
+        return Accepted(new
+        {
+            job.ProcessingJobId,
+            Status = job.Status.ToString(),
+            Message = "Media grafting job queued."
+        });
+    }
+
+
+
+    [HttpPost("loudness-analysis/{mediaFileId:int}")]
+    public async Task<IActionResult> CreateLoudnessAnalysis(int mediaFileId)
+    {
+        if (!int.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out int userId))
+        {
+            return Unauthorized();
+        }
+
+        var media = await _context.MediaFiles
+            .FirstOrDefaultAsync(m =>
+                m.MediaFileId == mediaFileId &&
+                m.UserId == userId);
+
+        if (media == null)
+            return NotFound("Media not found.");
+
+        bool supported =
+            media.ContentType.StartsWith(
+                "audio/", StringComparison.OrdinalIgnoreCase) ||
+            media.ContentType.StartsWith(
+                "video/", StringComparison.OrdinalIgnoreCase);
+
+        if (!supported)
+            return BadRequest("Media must contain audio.");
+
+        if (media.LoudnessAnalyzedAt.HasValue)
+            return Conflict("This media has already been analyzed.");
+
+        bool alreadyQueued = await _context.ProcessingJobs
+            .AnyAsync(j =>
+                j.MediaFileId == mediaFileId &&
+                j.OwnerUserId == userId &&
+                j.JobType == "LoudnessAnalysis" &&
+                (j.Status == ProcessingJobStatus.Queued ||
+                 j.Status == ProcessingJobStatus.Processing));
+
+        if (alreadyQueued)
+            return Conflict("Loudness analysis is already queued.");
+
+        var job = new ProcessingJob
+        {
+            OwnerUserId = userId,
+            MediaFileId = mediaFileId,
+            JobType = "LoudnessAnalysis",
+            Status = ProcessingJobStatus.Queued,
+            Progress = 0,
+            ParametersJson = "{}",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.ProcessingJobs.Add(job);
+        await _context.SaveChangesAsync();
+
+        return Accepted(new
+        {
+            job.ProcessingJobId,
+            Status = job.Status.ToString(),
+            Message = "Loudness analysis queued."
+        });
+    }
+
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetProcessingJob(int id)
     {
@@ -379,8 +546,13 @@ public class ProcessingJobsController : ControllerBase
         if (job == null)
             return NotFound("No active job found for this worker.");
 
-        if (job.JobType != "Conversion")
+
+        if (job.JobType != "Conversion" &&
+            job.JobType != "LoudnessAnalysis")
+        {
             return BadRequest("Unsupported processing job type.");
+        }
+
 
         var media = await _context.MediaFiles
             .AsNoTracking()
@@ -417,6 +589,93 @@ public class ProcessingJobsController : ControllerBase
             media.FileSizeBytes
         });
     }
+
+
+    [HttpPost("{id:int}/loudness-result")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SaveLoudnessAnalysis(
+        int id,
+        [FromBody] LoudnessAnalysisResultRequest request)
+    {
+        if (!IsAuthorizedWorker())
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.WorkerId))
+            return BadRequest("WorkerId is required.");
+
+        double[] values =
+        {
+        request.IntegratedLufs,
+        request.TruePeakDbfs,
+        request.LoudnessRangeLu,
+        request.LoudnessThresholdLufs,
+        request.NormalizationGainDb
+    };
+
+        if (values.Any(v => !double.IsFinite(v)))
+            return BadRequest("Invalid loudness measurements.");
+
+
+        if (request.LoudnessRangeLu < 0 ||
+            request.NormalizationGainDb +
+                request.TruePeakDbfs > -1.5 + 0.000001)
+        {
+            return BadRequest("Invalid or unsafe loudness values.");
+        }
+
+
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        var job = await _context.ProcessingJobs
+            .FromSqlInterpolated(
+                $"SELECT * FROM \"ProcessingJobs\" WHERE \"ProcessingJobId\" = {id} FOR UPDATE")
+            .FirstOrDefaultAsync();
+
+        if (job == null)
+            return NotFound();
+
+        if (job.WorkerId != request.WorkerId ||
+            job.Status != ProcessingJobStatus.Processing ||
+            job.JobType != "LoudnessAnalysis")
+        {
+            return Conflict("Job is not active for this worker.");
+        }
+
+        var media = await _context.MediaFiles
+            .FirstOrDefaultAsync(m =>
+                m.MediaFileId == job.MediaFileId &&
+                m.UserId == job.OwnerUserId);
+
+        if (media == null)
+            return NotFound("Source media not found.");
+
+        var now = DateTime.UtcNow;
+
+        media.IntegratedLufs = request.IntegratedLufs;
+        media.TruePeakDbfs = request.TruePeakDbfs;
+        media.LoudnessRangeLu = request.LoudnessRangeLu;
+        media.LoudnessThresholdLufs = request.LoudnessThresholdLufs;
+        media.NormalizationGainDb = request.NormalizationGainDb;
+        media.LoudnessAnalyzedAt = now;
+
+        job.Status = ProcessingJobStatus.Completed;
+        job.Progress = 100;
+        job.CompletedAt = now;
+        job.LastHeartbeatAt = now;
+        job.ErrorMessage = null;
+
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return Ok(new
+        {
+            job.ProcessingJobId,
+            media.MediaFileId,
+            media.NormalizationGainDb
+        });
+    }
+
 
 
     [HttpPost("{id}/output-upload")]
@@ -657,6 +916,266 @@ public class ProcessingJobsController : ControllerBase
         });
     }
 
+
+    [HttpPost("{id:int}/grafting-sources")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetGraftingSources(
+        int id,
+        [FromBody] HeartbeatRequest request)
+    {
+        if (!IsAuthorizedWorker())
+            return Unauthorized();
+
+        var job = await _context.ProcessingJobs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(j =>
+                j.ProcessingJobId == id &&
+                j.WorkerId == request.WorkerId &&
+                j.Status == ProcessingJobStatus.Processing &&
+                j.JobType == "MediaGrafting");
+
+        if (job == null)
+            return NotFound("Active grafting job not found.");
+
+        using var document = JsonDocument.Parse(job.ParametersJson);
+
+        var mediaIds = document.RootElement
+            .GetProperty("MediaFileIds")
+            .EnumerateArray()
+            .Select(x => x.GetInt32())
+            .ToList();
+
+        var mediaFiles = await _context.MediaFiles
+            .AsNoTracking()
+            .Where(m =>
+                m.UserId == job.OwnerUserId &&
+                mediaIds.Contains(m.MediaFileId))
+            .ToDictionaryAsync(m => m.MediaFileId);
+
+        if (mediaFiles.Count != mediaIds.Count)
+            return Conflict("One or more source files are missing.");
+
+        var bucketName = _configuration["S3:BucketName"];
+
+        if (string.IsNullOrWhiteSpace(bucketName))
+            return StatusCode(500, "S3 bucket is not configured.");
+
+        var sources = mediaIds.Select(mediaId =>
+        {
+            var media = mediaFiles[mediaId];
+
+            var url = _s3.GetPreSignedURL(
+                new GetPreSignedUrlRequest
+                {
+                    BucketName = bucketName,
+                    Key = media.S3ObjectKey,
+                    Verb = HttpVerb.GET,
+                    Expires = DateTime.UtcNow.AddMinutes(30)
+                });
+
+            return new
+            {
+                media.MediaFileId,
+                media.OriginalFileName,
+                media.ContentType,
+                media.FileSizeBytes,
+                DownloadUrl = url
+            };
+        }).ToList();
+
+        return Ok(sources);
+    }
+
+
+    [HttpPost("{id:int}/grafting-output-upload")]
+    [AllowAnonymous]
+    public async Task<IActionResult> PrepareGraftingOutput(
+        int id,
+        [FromBody] HeartbeatRequest request)
+    {
+        if (!IsAuthorizedWorker())
+            return Unauthorized();
+
+        var job = await _context.ProcessingJobs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(j =>
+                j.ProcessingJobId == id &&
+                j.WorkerId == request.WorkerId &&
+                j.Status == ProcessingJobStatus.Processing &&
+                j.JobType == "MediaGrafting");
+
+        if (job == null)
+            return NotFound("Active grafting job not found.");
+
+        using var document = JsonDocument.Parse(job.ParametersJson);
+
+        string? mediaType = document.RootElement
+            .GetProperty("MediaType").GetString();
+
+        string extension;
+        string contentType;
+
+        if (mediaType == "audio")
+        {
+            extension = "mp3";
+            contentType = "audio/mpeg";
+        }
+        else if (mediaType == "video")
+        {
+            extension = "mp4";
+            contentType = "video/mp4";
+        }
+        else
+        {
+            return BadRequest("Invalid grafting media type.");
+        }
+
+        var bucketName = _configuration["S3:BucketName"];
+
+        if (string.IsNullOrWhiteSpace(bucketName))
+            return StatusCode(500, "S3 bucket is not configured.");
+
+        var objectKey =
+            $"processed/{job.OwnerUserId}/{job.ProcessingJobId}/grafted.{extension}";
+
+        var uploadUrl = _s3.GetPreSignedURL(
+            new GetPreSignedUrlRequest
+            {
+                BucketName = bucketName,
+                Key = objectKey,
+                Verb = HttpVerb.PUT,
+                Expires = DateTime.UtcNow.AddMinutes(30)
+            });
+
+        return Ok(new
+        {
+            UploadUrl = uploadUrl,
+            ContentType = contentType,
+            OutputFileName = $"grafted.{extension}"
+        });
+    }
+
+
+    [HttpPost("{id:int}/grafting-finalize")]
+    [AllowAnonymous]
+    public async Task<IActionResult> FinalizeGrafting(
+        int id,
+        [FromBody] HeartbeatRequest request)
+    {
+        if (!IsAuthorizedWorker())
+            return Unauthorized();
+
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        var job = await _context.ProcessingJobs
+            .FromSqlInterpolated(
+                $"SELECT * FROM \"ProcessingJobs\" WHERE \"ProcessingJobId\" = {id} FOR UPDATE")
+            .FirstOrDefaultAsync();
+
+        if (job == null)
+            return NotFound();
+
+        if (job.WorkerId != request.WorkerId ||
+            job.Status != ProcessingJobStatus.Processing ||
+            job.JobType != "MediaGrafting")
+        {
+            return Conflict("Job is not active for this worker.");
+        }
+
+        if (job.OutputMediaFileId != null)
+            return Conflict("Output already registered.");
+
+        using var document = JsonDocument.Parse(job.ParametersJson);
+
+        string? title = document.RootElement
+            .GetProperty("Title").GetString();
+
+        string? mediaType = document.RootElement
+            .GetProperty("MediaType").GetString();
+
+        string extension;
+        string contentType;
+
+        if (mediaType == "audio")
+        {
+            extension = "mp3";
+            contentType = "audio/mpeg";
+        }
+        else if (mediaType == "video")
+        {
+            extension = "mp4";
+            contentType = "video/mp4";
+        }
+        else
+        {
+            return BadRequest("Invalid media type.");
+        }
+
+        if (string.IsNullOrWhiteSpace(title))
+            return BadRequest("Invalid output title.");
+
+        var bucketName = _configuration["S3:BucketName"];
+
+        if (string.IsNullOrWhiteSpace(bucketName))
+            return StatusCode(500, "S3 bucket is not configured.");
+
+        var objectKey =
+            $"processed/{job.OwnerUserId}/{job.ProcessingJobId}/grafted.{extension}";
+
+        GetObjectMetadataResponse metadata;
+
+        try
+        {
+            metadata = await _s3.GetObjectMetadataAsync(
+                new GetObjectMetadataRequest
+                {
+                    BucketName = bucketName,
+                    Key = objectKey
+                });
+        }
+        catch (AmazonS3Exception ex)
+            when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return Conflict("Grafted output has not been uploaded.");
+        }
+
+        if (metadata.ContentLength <= 0)
+            return Conflict("Grafted output is empty.");
+
+        var now = DateTime.UtcNow;
+
+        var output = new MediaFile
+        {
+            UserId = job.OwnerUserId,
+            Title = title,
+            OriginalFileName = $"grafted-{job.ProcessingJobId}.{extension}",
+            S3ObjectKey = objectKey,
+            ContentType = contentType,
+            FileSizeBytes = metadata.ContentLength,
+            UploadedAt = now
+        };
+
+        _context.MediaFiles.Add(output);
+        await _context.SaveChangesAsync();
+
+        job.OutputMediaFileId = output.MediaFileId;
+        job.Status = ProcessingJobStatus.Completed;
+        job.Progress = 100;
+        job.CompletedAt = now;
+        job.LastHeartbeatAt = now;
+        job.ErrorMessage = null;
+
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return Ok(new
+        {
+            job.ProcessingJobId,
+            job.OutputMediaFileId,
+            Status = job.Status.ToString()
+        });
+    }
 
 
 }

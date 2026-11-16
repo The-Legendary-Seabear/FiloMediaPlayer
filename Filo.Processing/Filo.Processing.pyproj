@@ -26,6 +26,8 @@
     <Compile Include="converter.py" />
     <Compile Include="downloader.py" />
     <Compile Include="Filo.Processing.py" />
+    <Compile Include="grafter.py" />
+    <Compile Include="normalizer.py" />
     <Compile Include="processor_test.py" />
     <Compile Include="test_converter.py" />
     <Compile Include="test_download.py" />

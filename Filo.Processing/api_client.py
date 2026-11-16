@@ -35,8 +35,15 @@ class FiloApiClient:
             timeout=REQUEST_TIMEOUT
         )
 
-        response.raise_for_status()
+        if not response.ok:
+            raise requests.HTTPError(
+                f"API request failed ({response.status_code}): "
+                f"{response.text}",
+                response=response
+            )
+
         return response
+
 
     def claim_job(self):
         response = self._post(
@@ -91,5 +98,40 @@ class FiloApiClient:
     def finalize_output(self, job_id):
         return self._post(
             f"api/processing-jobs/{job_id}/finalize-output",
+            {"workerId": WORKER_ID}
+        ).json()
+
+    
+    def save_loudness_result(self, job_id, measurements, gain_db):
+        return self._post(
+            f"api/processing-jobs/{job_id}/loudness-result",
+            {
+                "workerId": WORKER_ID,
+                "integratedLufs": measurements["integrated_lufs"],
+                "truePeakDbfs": measurements["true_peak_dbfs"],
+                "loudnessRangeLu": measurements["loudness_range_lu"],
+                "loudnessThresholdLufs": measurements["threshold_lufs"],
+                "normalizationGainDb": gain_db
+            }
+        ).json()
+
+    
+    def get_grafting_sources(self, job_id):
+        return self._post(
+            f"api/processing-jobs/{job_id}/grafting-sources",
+            {"workerId": WORKER_ID}
+        ).json()
+
+
+    def prepare_grafting_upload(self, job_id):
+        return self._post(
+            f"api/processing-jobs/{job_id}/grafting-output-upload",
+            {"workerId": WORKER_ID}
+        ).json()
+
+
+    def finalize_grafting(self, job_id):
+        return self._post(
+            f"api/processing-jobs/{job_id}/grafting-finalize",
             {"workerId": WORKER_ID}
         ).json()

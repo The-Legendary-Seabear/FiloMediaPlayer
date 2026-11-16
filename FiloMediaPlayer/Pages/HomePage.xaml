@@ -96,6 +96,23 @@
                 </Grid>
             </VerticalStackLayout>
 
+
+            <!-- Media processing tools -->
+            <VerticalStackLayout Spacing="12">
+
+                <Label
+        Text="Media Tools"
+        Style="{StaticResource Filo.SectionTitle}" />
+
+                <Button
+        Text="Media Grafting"
+        Style="{StaticResource Filo.Button.Secondary}"
+        HeightRequest="80"
+        Clicked="OnMediaGraftingButton" />
+
+            </VerticalStackLayout>
+
+
         </VerticalStackLayout>
     </ScrollView>
 

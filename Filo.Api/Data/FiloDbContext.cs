@@ -140,6 +140,19 @@ namespace Filo.Api.Data
                     .HasMaxLength(255)
                     .IsRequired();
 
+
+                entity.Property(m => m.IntegratedLufs);
+
+                entity.Property(m => m.TruePeakDbfs);
+
+                entity.Property(m => m.LoudnessRangeLu);
+
+                entity.Property(m => m.LoudnessThresholdLufs);
+
+                entity.Property(m => m.NormalizationGainDb);
+
+                entity.Property(m => m.LoudnessAnalyzedAt);
+
                 entity.HasOne(m => m.User)
                     .WithMany()
                     .HasForeignKey(m => m.UserId)

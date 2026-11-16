@@ -89,7 +89,7 @@ namespace Filo.Api.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Filo.Api.Models.MediaBookmark", b =>
+            modelBuilder.Entity("Filo.Api.Models.Bookmarks.MediaBookmark", b =>
                 {
                     b.Property<int>("MediaBookmarkId")
                         .ValueGeneratedOnAdd()
@@ -156,6 +156,21 @@ namespace Filo.Api.Migrations
                     b.Property<long>("FileSizeBytes")
                         .HasColumnType("bigint");
 
+                    b.Property<double?>("IntegratedLufs")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("LoudnessAnalyzedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("LoudnessRangeLu")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("LoudnessThresholdLufs")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("NormalizationGainDb")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("OriginalFileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -173,6 +188,9 @@ namespace Filo.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<double?>("TruePeakDbfs")
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp with time zone");
@@ -465,7 +483,7 @@ namespace Filo.Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Filo.Api.Models.MediaBookmark", b =>
+            modelBuilder.Entity("Filo.Api.Models.Bookmarks.MediaBookmark", b =>
                 {
                     b.HasOne("Filo.Api.Models.MediaFile", "MediaFile")
                         .WithMany()

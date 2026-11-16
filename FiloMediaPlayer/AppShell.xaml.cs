@@ -17,5 +17,6 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("EditMediaPage", typeof(EditMediaPage));
         Routing.RegisterRoute("ManageMediaPlaylistsPage",typeof(ManageMediaPlaylistsPage));
         Routing.RegisterRoute("RegisterPage",typeof(RegisterPage));
+        Routing.RegisterRoute(nameof(MediaGraftingPage),typeof(MediaGraftingPage));
     }
 }

@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="FiloMediaPlayer.Pages.MediaGraftingPage"
+    Title="Media Grafting">
+
+    <Grid
+        RowDefinitions="Auto,*,Auto"
+        RowSpacing="16"
+        Padding="{StaticResource Filo.Page.Padding}"
+        MaximumWidthRequest="{StaticResource Filo.Content.MaxWidth}">
+
+        <!-- Page heading -->
+        <VerticalStackLayout Grid.Row="0" Spacing="8">
+
+            <Label
+                Text="Media Grafting"
+                Style="{StaticResource Filo.PageTitle}" />
+
+            <Label
+                Text="Combine media files in your preferred order."
+                Style="{StaticResource Caption1}" />
+
+            <Picker
+                x:Name="GraftingTypePicker"
+                Title="Media type"
+                SelectedIndexChanged="OnGraftingTypeChanged">
+
+                <Picker.Items>
+                    <x:String>Audio</x:String>
+                    <x:String>Video</x:String>
+                </Picker.Items>
+
+            </Picker>
+
+        </VerticalStackLayout>
+
+        <!-- Library and grafting sequence -->
+        <Grid
+            Grid.Row="1"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="16">
+
+            <!-- Available media -->
+            <Grid
+                Grid.Column="0"
+                RowDefinitions="Auto,Auto,*"
+                RowSpacing="12">
+
+                <Label
+                    Grid.Row="0"
+                    Text="Cloud Library"
+                    Style="{StaticResource Filo.SectionTitle}" />
+
+                <Border
+                    Grid.Row="1"
+                    Style="{StaticResource Filo.InputShell}">
+
+                    <SearchBar
+                        x:Name="MediaSearchBar"
+                        Placeholder="Search media..."
+                        TextChanged="OnMediaSearchChanged" />
+
+                </Border>
+
+                <CollectionView
+                    Grid.Row="2"
+                    x:Name="AvailableMediaCollection"
+                    SelectionMode="None">
+
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout
+                            Orientation="Vertical"
+                            ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+
+                    <CollectionView.EmptyView>
+                        <Label
+                            Text="No matching media found."
+                            Style="{StaticResource Filo.EmptyState}" />
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+
+                            <Border Style="{StaticResource Filo.ListRow}">
+
+                                <Grid
+                                    ColumnDefinitions="Auto,*,Auto"
+                                    ColumnSpacing="12">
+
+                                    <Image
+                                        Grid.Column="0"
+                                        Source="{Binding ThumbnailUrl}"
+                                        WidthRequest="52"
+                                        HeightRequest="52"
+                                        Aspect="AspectFill" />
+
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="{Binding Title}"
+                                        Style="{StaticResource Filo.ItemTitle}"
+                                        VerticalOptions="Center"
+                                        LineBreakMode="TailTruncation" />
+
+                                    <Button
+                                        Grid.Column="2"
+                                        Text="Add"
+                                        Style="{StaticResource Filo.Button.Ghost}"
+                                        Clicked="OnAddMediaClicked" />
+
+                                </Grid>
+
+                            </Border>
+
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                </CollectionView>
+
+            </Grid>
+
+            <!-- Ordered grafting list -->
+            <Grid
+                Grid.Column="1"
+                RowDefinitions="Auto,*"
+                RowSpacing="12">
+
+                <Label
+                    Grid.Row="0"
+                    Text="Grafting Order"
+                    Style="{StaticResource Filo.SectionTitle}" />
+
+                <CollectionView
+                    Grid.Row="1"
+                    x:Name="SelectedMediaCollection"
+                    SelectionMode="None">
+
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout
+                            Orientation="Vertical"
+                            ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+
+                    <CollectionView.EmptyView>
+                        <Label
+                            Text="Add media from your library."
+                            Style="{StaticResource Filo.EmptyState}" />
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+
+                            <Border Style="{StaticResource Filo.ListRow}">
+
+                                <Border.GestureRecognizers>
+                                    <DragGestureRecognizer
+                                        CanDrag="True"
+                                        DragStarting="OnMediaDragStarting" />
+
+                                    <DropGestureRecognizer
+                                        AllowDrop="True"
+                                        Drop="OnMediaDropped" />
+                                </Border.GestureRecognizers>
+
+                                <Grid
+                                    ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                                    ColumnSpacing="8">
+
+                                    <Label
+                                        Grid.Column="0"
+                                        Text="☰"
+                                        VerticalOptions="Center" />
+
+                                    <Label
+                                        Grid.Column="1"
+                                        Text="{Binding Title}"
+                                        Style="{StaticResource Filo.ItemTitle}"
+                                        VerticalOptions="Center"
+                                        LineBreakMode="TailTruncation" />
+
+                                    <Button
+                                        Grid.Column="2"
+                                        Text="↑"
+                                        Style="{StaticResource Filo.Button.Ghost}"
+                                        Clicked="OnMoveUpClicked" />
+
+                                    <Button
+                                        Grid.Column="3"
+                                        Text="↓"
+                                        Style="{StaticResource Filo.Button.Ghost}"
+                                        Clicked="OnMoveDownClicked" />
+
+                                    <Button
+                                        Grid.Column="4"
+                                        Text="Remove"
+                                        Style="{StaticResource Filo.Button.Ghost}"
+                                        Clicked="OnRemoveMediaClicked" />
+
+                                </Grid>
+
+                            </Border>
+
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                </CollectionView>
+
+            </Grid>
+
+        </Grid>
+
+        <!-- Output configuration -->
+        <VerticalStackLayout
+            Grid.Row="2"
+            Spacing="10">
+
+            <Label
+                Text="Output Title"
+                Style="{StaticResource Filo.SectionTitle}" />
+
+            <Border Style="{StaticResource Filo.InputShell}">
+                <Entry
+                    x:Name="OutputTitleEntry"
+                    Placeholder="Enter combined media title..." 
+                    TextChanged="OnOutputTitleChanged"
+                    MaxLength="255"/>
+            </Border>
+
+            <Button
+                x:Name="CreateGraftButton"
+                Text="Create Grafted Media"
+                IsEnabled="False"
+                Clicked="OnCreateGraftClicked" />
+
+        </VerticalStackLayout>
+
+    </Grid>
+</ContentPage>
