@@ -39,6 +39,7 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</TargetPlatformMinVersion>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -147,14 +148,9 @@
 	</PropertyGroup>
 
 
-	<Target Name="CopyX64WinRTHost"
-			AfterTargets="CopyFilesToOutputDirectory"
-			Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0' And '$(RuntimeIdentifier)' == 'win-x64'">
+	<Target Name="CopyX64WinRTHost" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0' And '$(RuntimeIdentifier)' == 'win-x64'">
 
-		<Copy
-			SourceFiles="$(NuGetPackageRoot)microsoft.windows.cswinrt\2.3.1\hosting\x64\native\WinRT.Host.dll"
-			DestinationFiles="$(TargetDir)WinRT.Host.dll"
-			SkipUnchangedFiles="false" />
+		<Copy SourceFiles="$(NuGetPackageRoot)microsoft.windows.cswinrt\2.3.1\hosting\x64\native\WinRT.Host.dll" DestinationFiles="$(TargetDir)WinRT.Host.dll" SkipUnchangedFiles="false" />
 
 	</Target>
 

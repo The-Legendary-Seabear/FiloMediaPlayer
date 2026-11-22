@@ -8,5 +8,6 @@
         public string ContentType { get; set; } = string.Empty;
         public string? ThumbnailUrl { get; set; }
         public double? DurationSeconds { get; set; }
+        public double? NormalizationGainDb { get; set; }
     }
 }

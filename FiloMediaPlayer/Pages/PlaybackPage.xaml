@@ -301,6 +301,25 @@
 
                     </Grid>
 
+
+                    <HorizontalStackLayout
+    Spacing="10"
+    HorizontalOptions="Start"
+    VerticalOptions="Center">
+
+                        <Label
+        Text="Audio Normalization"
+        VerticalOptions="Center" />
+
+                        <Switch
+        x:Name="NormalizationSwitch"
+        IsToggled="True"
+        VerticalOptions="Center"
+        Toggled="OnNormalizationToggled" />
+
+                    </HorizontalStackLayout>
+
+
                 </VerticalStackLayout>
 
             </Grid>

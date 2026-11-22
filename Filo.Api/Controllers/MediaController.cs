@@ -102,6 +102,12 @@ namespace Filo.Api.Controllers
                 return NotFound();
             }
 
+            System.Diagnostics.Debug.WriteLine(
+    $"Normalization API: Media ID = {media.MediaFileId}, " +
+    $"Gain = {media.NormalizationGainDb?.ToString("F2") ?? "NULL"}");
+
+
+
             var bucketName = _configuration["AWS:BucketName"];
             if(string.IsNullOrEmpty(bucketName))
             {
@@ -128,12 +134,12 @@ namespace Filo.Api.Controllers
 
                 var thumbnailurl = _cloudStorage.GetPreSignedURL(thumbnailPreSignedURL);
 
-                var playbackMediaResponseWithThumbnail = new PlaybackMediaResponse { Title = media.Title, MediaFileId = media.MediaFileId, PlaybackUrl = mediaUrl , ContentType = media.ContentType, ThumbnailUrl = thumbnailurl};
+                var playbackMediaResponseWithThumbnail = new PlaybackMediaResponse { Title = media.Title, MediaFileId = media.MediaFileId, PlaybackUrl = mediaUrl , ContentType = media.ContentType, ThumbnailUrl = thumbnailurl, NormalizationGainDb = media.NormalizationGainDb };
 
                 return Ok(playbackMediaResponseWithThumbnail);
             }
 
-            var playbackMediaResponse = new PlaybackMediaResponse { Title = media.Title, MediaFileId = media.MediaFileId, PlaybackUrl = mediaUrl, ContentType = media.ContentType };
+            var playbackMediaResponse = new PlaybackMediaResponse { Title = media.Title, MediaFileId = media.MediaFileId, PlaybackUrl = mediaUrl, ContentType = media.ContentType, NormalizationGainDb = media.NormalizationGainDb };
 
             return Ok(playbackMediaResponse);
         }

@@ -1,8 +1,20 @@
 <Solution>
-  <Project Path="Filo.Api/Filo.Api.csproj" Id="7b3bd6b9-1b34-4325-96ee-2687782fcfa0" />
-  <Project Path="Filo.AudioEffects.Windows/Filo.AudioEffects.Windows.csproj" Id="be684ac4-5486-43ab-a032-eee77fa31b30" />
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="Filo.Api/Filo.Api.csproj" Id="7b3bd6b9-1b34-4325-96ee-2687782fcfa0">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="Filo.AudioEffects.Windows/Filo.AudioEffects.Windows.csproj" Id="be684ac4-5486-43ab-a032-eee77fa31b30">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
   <Project Path="Filo.Processing/Filo.Processing.pyproj" Type="888888a0-9f3d-457c-b088-3a5042f75d52" Id="3d2db0f5-2e3c-4f6d-97da-f2dcfb5f6019">
+    <Platform Project="AnyCPU" />
     <Build Project="false" />
   </Project>
-  <Project Path="FiloMediaPlayer/FiloMediaPlayer.csproj" />
+  <Project Path="FiloMediaPlayer/FiloMediaPlayer.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+    <Deploy Solution="Debug|x64" />
+  </Project>
 </Solution>

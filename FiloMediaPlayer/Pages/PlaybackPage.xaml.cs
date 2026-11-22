@@ -8,6 +8,7 @@ using FiloMediaPlayer.Services;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.IO.MemoryMappedFiles;
 
 namespace FiloMediaPlayer.Pages;
 
@@ -32,6 +33,9 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     private readonly BookmarkTimelineDrawable _bookmarkTimelineDrawable = new();
     private List<BookmarkResponse> _timelineBookmarks = new();
 
+    private MemoryMappedFile? _normalizationMemory;
+    private MemoryMappedViewAccessor? _normalizationWriter;
+
     public enum PlaybackMode
     {
         Normal,
@@ -51,6 +55,10 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     public PlaybackPage(FiloApiService apiService)
     {
         InitializeComponent();
+
+        #if WINDOWS
+            InitializeNormalizationMemory();
+        #endif
 
         MediaPlayer.PropertyChanged += (sender, e) =>
         {
@@ -329,6 +337,13 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
             var playbackMedia = await response.Content
                 .ReadFromJsonAsync<PlaybackMediaResponse>();
 
+            Debug.WriteLine(
+    $"Normalization: Media ID = {playbackMedia?.MediaFileId}");
+
+            Debug.WriteLine(
+                $"Normalization: API gain = " +
+                $"{playbackMedia?.NormalizationGainDb?.ToString("F2") ?? "Not analyzed"} dB");
+
             if (playbackMedia == null ||
                 string.IsNullOrWhiteSpace(playbackMedia.PlaybackUrl))
             {
@@ -348,13 +363,29 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
                         "audio/",
                         StringComparison.OrdinalIgnoreCase) == true;
 
+
+                _currentNormalizationGainDb =
+                    playbackMedia.NormalizationGainDb is double gain
+                    && double.IsFinite(gain)
+                        ? gain
+                        : 0.0;
+
 #if WINDOWS
-            InspectWindowsPlayer();
+    UpdateWindowsNormalizationGain();
+#endif
+
+#if WINDOWS
+                InspectWindowsPlayer(_currentNormalizationGainDb);
 #endif
 
                 MediaPlayer.Source = playbackMedia.PlaybackUrl;
+
                 //MediaPlayer.Source = MediaSource.FromFile(@"C:\Users\akohn\Downloads\Elden Ring - Putrescent Knight.mov");
             });
+
+            Debug.WriteLine(
+    $"Normalization: API gain = " +
+    $"{playbackMedia?.NormalizationGainDb?.ToString("F2") ?? "Not analyzed"} dB");
 
             _currentPlaybackMedia = playbackMedia;
             await LoadBookmarks();
@@ -412,6 +443,20 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
         MediaPlayer.Volume = e.NewValue;
     }
 
+
+    private void OnNormalizationToggled(object sender, ToggledEventArgs e)
+    {
+        _normalizationEnabled = e.Value;
+
+#if WINDOWS
+            UpdateWindowsNormalizationGain();
+#endif
+
+        Debug.WriteLine(
+            $"Normalization: {(_normalizationEnabled ? "ON" : "OFF")}");
+    }
+
+
     private void OnMediaOpened(object sender, EventArgs e)
     {
         MainThread.BeginInvokeOnMainThread(() =>
@@ -421,7 +466,7 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
             BookmarkTimelineGraphics.Invalidate();
             TotalTimeLabel.Text = $"{(int)MediaPlayer.Duration.TotalMinutes}:{MediaPlayer.Duration.Seconds:D2}";
 
-            
+
 
             MediaPlayer.Play();
             _isPlaying = true;
@@ -1057,11 +1102,20 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     //-----------------------------------------WINDOWS-----------------------------------------------------------------------------------------------------------------------------------------
 
 
-private bool _normalizationEffectAdded = false;
+    private bool _normalizationEnabled = true;
+    private double _currentNormalizationGainDb = 0.0;
 
 #if WINDOWS
+private Windows.Media.Playback.MediaPlayer?
+    _normalizationNativePlayer;
 
-private void InspectWindowsPlayer()
+private Windows.Foundation.Collections.PropertySet?
+    _normalizationConfiguration;
+#endif
+
+
+#if WINDOWS
+private void InspectWindowsPlayer(double gainDb)
 {
     var platformView = MediaPlayer.Handler?.PlatformView;
 
@@ -1076,47 +1130,56 @@ private void InspectWindowsPlayer()
         .OfType<Microsoft.UI.Xaml.Controls.MediaPlayerElement>()
         .FirstOrDefault();
 
-    if (playerElement?.MediaPlayer == null)
+    var nativePlayer = playerElement?.MediaPlayer;
+
+    if (nativePlayer == null)
     {
         Debug.WriteLine(
             "Normalization: Native MediaPlayer not found.");
         return;
     }
 
-    var nativePlayer = playerElement.MediaPlayer;
+    double appliedGain = _normalizationEnabled
+        ? gainDb
+        : 0.0;
 
-    nativePlayer.MediaFailed += (sender, args) =>
-{
-    Debug.WriteLine(
-        $"Normalization: Native player failed: {args.Error}");
-
-    Debug.WriteLine(
-        $"Normalization: Error message: {args.ErrorMessage}");
-};
-
-    Debug.WriteLine(
-        "Normalization: Native Windows MediaPlayer found!");
-
-    if (_normalizationEffectAdded)
+    // If we're still using the same native player,
+    // update its existing effect configuration.
+    if (ReferenceEquals(nativePlayer, _normalizationNativePlayer)
+        && _normalizationConfiguration != null)
+    {
+        UpdateWindowsNormalizationGain();
         return;
+    }
+
+    // New native player: attach a new effect.
+    var configuration =
+        new Windows.Foundation.Collections.PropertySet
+        {
+            ["GainDb"] = appliedGain
+        };
 
     try
     {
-        var configuration =
-            new Windows.Foundation.Collections.PropertySet
-            {
-                ["GainDb"] = 6.0
-            };
-
         nativePlayer.AddAudioEffect(
             "Filo.AudioEffects.Windows.NormalizationAudioEffect",
             false,
             configuration);
 
-        _normalizationEffectAdded = true;
+        nativePlayer.MediaFailed += (sender, args) =>
+        {
+            Debug.WriteLine(
+                $"Normalization: Native player failed: {args.Error}");
+
+            Debug.WriteLine(
+                $"Normalization: Error message: {args.ErrorMessage}");
+        };
+
+        _normalizationNativePlayer = nativePlayer;
+        _normalizationConfiguration = configuration;
 
         Debug.WriteLine(
-            "Normalization: AddAudioEffect completed.");
+            $"Normalization: Effect attached at {appliedGain:F2} dB");
     }
     catch (Exception ex)
     {
@@ -1124,6 +1187,56 @@ private void InspectWindowsPlayer()
             $"Normalization: Effect activation failed: {ex}");
     }
 }
+
+
+private void UpdateWindowsNormalizationGain()
+{
+    double gain = _normalizationEnabled
+        ? _currentNormalizationGainDb
+        : 0.0;
+
+    if (_normalizationWriter != null)
+    {
+        _normalizationWriter.Write(0, gain);
+
+        Debug.WriteLine(
+            $"Normalization: Shared memory gain written = {gain:F2} dB");
+    }
+
+    // Keep the existing mechanism temporarily.
+    Filo.AudioEffects.Windows.NormalizationAudioEffect.SetLiveGain(gain);
+
+    Debug.WriteLine(
+        $"Normalization: Live gain requested = {gain:F2} dB");
+}
+
+private void InitializeNormalizationMemory()
+{
+    try
+    {
+        _normalizationMemory = MemoryMappedFile.CreateOrOpen(
+            @"Local\FiloNormalizationGain",
+            sizeof(double));
+
+        _normalizationWriter =
+            _normalizationMemory.CreateViewAccessor(
+                0,
+                sizeof(double),
+                MemoryMappedFileAccess.ReadWrite);
+
+        _normalizationWriter.Write(0, 0.0);
+
+        Debug.WriteLine(
+            "Normalization: Shared memory initialized.");
+    }
+    catch (Exception ex)
+    {
+        Debug.WriteLine(
+            $"Normalization: Shared memory initialization failed: {ex}");
+    }
+}
+
+
 #endif
 
 
