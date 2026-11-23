@@ -1,14 +1,13 @@
-
+﻿
 using FiloMediaPlayer.DTOs;
 using System.Collections.ObjectModel;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace FiloMediaPlayer.Pages;
 
 public partial class MediaGraftingPage : ContentPage
 {
-    private readonly HttpClient _httpClient;
+    private readonly FiloApiService _apiService;
 
     private List<MediaResponse> _allMedia = new();
 
@@ -19,15 +18,13 @@ public partial class MediaGraftingPage : ContentPage
     private bool _isSubmittingGraft;
 
     private bool _loaded;
+    private bool _isLoading;
 
-    public MediaGraftingPage()
+    public MediaGraftingPage(FiloApiService apiService)
     {
         InitializeComponent();
 
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("https://localhost:7038/")
-        };
+        _apiService = apiService;
 
         SelectedMediaCollection.ItemsSource = _selectedMedia;
 
@@ -38,49 +35,55 @@ public partial class MediaGraftingPage : ContentPage
     {
         base.OnAppearing();
 
-        if (_loaded)
+        // A failed load is retried the next time the page appears.
+        if (_loaded || _isLoading)
             return;
 
-        await LoadMedia();
+        _isLoading = true;
+
+        try
+        {
+            await LoadMedia();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     private async Task LoadMedia()
     {
-        try
+        while (true)
         {
-            var token = await SecureStorage.Default
-                .GetAsync("accessToken");
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
-            using var response =
-                await _httpClient.GetAsync("api/media");
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                await DisplayAlertAsync(
-                    "Error",
-                    "Unable to load your media library.",
-                    "OK");
+                using var response =
+                    await _apiService.GetWithRetryAsync("api/media");
 
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (await ErrorPresenter.ShowLoadFailureAsync(
+                        this, response, "load your media library"))
+                        continue;
+
+                    return;
+                }
+
+                _allMedia = await response.Content
+                    .ReadFromJsonAsync<List<MediaResponse>>()
+                    ?? new();
+
+                _loaded = true;
+
+                UpdateAvailableMedia();
                 return;
             }
-
-            _allMedia = await response.Content
-                .ReadFromJsonAsync<List<MediaResponse>>()
-                ?? new();
-
-            _loaded = true;
-
-            UpdateAvailableMedia();
-        }
-        catch (Exception)
-        {
-            await DisplayAlertAsync(
-                "Connection Error",
-                "Unable to contact the server.",
-                "OK");
+            catch (Exception ex)
+            {
+                if (!await ErrorPresenter.ShowLoadFailureAsync(
+                    this, ex, "load your media library"))
+                    return;
+            }
         }
     }
 
@@ -251,22 +254,6 @@ public partial class MediaGraftingPage : ContentPage
 
         try
         {
-            var token = await SecureStorage.Default
-                .GetAsync("accessToken");
-
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                await DisplayAlertAsync(
-                    "Authentication Error",
-                    "Please log in again.",
-                    "OK");
-
-                return;
-            }
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
             var request = new
             {
                 Title = OutputTitleEntry.Text.Trim(),
@@ -281,22 +268,14 @@ public partial class MediaGraftingPage : ContentPage
                     .ToList()
             };
 
-            using var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _apiService.PostAsync(
                 "api/processing-jobs/grafting",
                 request);
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
-
-                System.Diagnostics.Debug.WriteLine(
-                    $"Grafting request failed: {error}");
-
-                await DisplayAlertAsync(
-                    "Grafting Error",
-                    $"Unable to create grafting job. " +
-                    $"Server returned {(int)response.StatusCode}.",
-                    "OK");
+                await ErrorPresenter.ShowAsync(
+                    this, response, "create the grafting job");
 
                 return;
             }
@@ -312,13 +291,10 @@ public partial class MediaGraftingPage : ContentPage
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine(
-                $"Grafting error: {ex}");
-
-            await DisplayAlertAsync(
-                "Connection Error",
-                "Unable to contact the server.",
-                "OK");
+            // Not retried automatically: the job may already be queued.
+            // The selection is kept so the user can submit again.
+            await ErrorPresenter.ShowAsync(
+                this, ex, "create the grafting job", mayHaveSucceeded: true);
         }
         finally
         {

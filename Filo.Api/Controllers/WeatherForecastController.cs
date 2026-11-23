@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace Filo.Api.Controllers
 {
+    [Filo.Api.Infrastructure.DevelopmentOnly]
     [ApiController]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase

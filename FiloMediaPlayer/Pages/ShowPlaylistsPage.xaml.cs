@@ -1,5 +1,5 @@
-using FiloMediaPlayer.DTOs;
-using System.Net.Http.Headers;
+﻿using FiloMediaPlayer.DTOs;
+using System.Net;
 using System.Net.Http.Json;
 using FiloMediaPlayer.Services;
 
@@ -7,88 +7,76 @@ namespace FiloMediaPlayer.Pages;
 
 public partial class ShowPlaylistsPage : ContentPage
 {
-    private readonly HttpClient _httpClient;
     private readonly FiloApiService _apiService;
     private List<PlaylistResponse> _playlists = new();
     private List<MediaResponse> _media = new();
     private int addMediaToPlaylistId;
+    private bool _isLoadingPlaylists;
+    private bool _isAddingMedia;
+
     public ShowPlaylistsPage(FiloApiService apiService)
     {
         InitializeComponent();
 
         _apiService = apiService;
-
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("https://localhost:7038/")
-        };
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
 
-        await LoadPlaylists();
+        if (_isLoadingPlaylists)
+            return;
+
+        _isLoadingPlaylists = true;
+
+        try
+        {
+            await LoadPlaylists();
+        }
+        finally
+        {
+            _isLoadingPlaylists = false;
+        }
     }
 
 
     private async Task LoadPlaylists()
     {
-        try
+        // On failure the playlists already shown stay visible.
+        while (true)
         {
-            
-            using var response = await _apiService.GetWithRetryAsync(
-                "api/playlists");
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                await DisplayAlertAsync(
-                    "Connection Error",
-                    "Unable to load playlists. Your existing data will remain visible.",
-                    "OK");
+                using var response = await _apiService.GetWithRetryAsync(
+                    "api/playlists");
 
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (await ErrorPresenter.ShowLoadFailureAsync(this, response, "load your playlists"))
+                        continue;
+
+                    return;
+                }
+
+                var playlists = await response.Content
+                    .ReadFromJsonAsync<List<PlaylistResponse>>();
+
+                if (playlists == null)
+                {
+                    throw new InvalidOperationException(
+                        "The server returned an invalid playlist response.");
+                }
+
+                _playlists = playlists;
+                PlaylistUiCollection.ItemsSource = _playlists;
                 return;
             }
-
-            var playlists = await response.Content
-                .ReadFromJsonAsync<List<PlaylistResponse>>();
-
-            if (playlists == null)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException(
-                    "The server returned an invalid playlist response.");
+                if (!await ErrorPresenter.ShowLoadFailureAsync(this, ex, "load your playlists"))
+                    return;
             }
-
-            _playlists = playlists;
-            PlaylistUiCollection.ItemsSource = _playlists;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            await DisplayAlertAsync(
-                "Session Expired",
-                "Please log in again.",
-                "OK");
-        }
-        catch (HttpRequestException)
-        {
-            await DisplayAlertAsync(
-                "Connection Error",
-                "Unable to contact the server. Please try again.",
-                "OK");
-        }
-        catch (TaskCanceledException)
-        {
-            await DisplayAlertAsync(
-                "Request Timed Out",
-                "The server took too long to respond. Please try again.",
-                "OK");
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlertAsync(
-                "Error",
-                $"Unable to load playlists: {ex.Message}",
-                "OK");
         }
     }
 
@@ -125,59 +113,39 @@ public partial class ShowPlaylistsPage : ContentPage
 
     private async Task LoadAvailableMedia()
     {
-        try
+        while (true)
         {
-            using var response = await _apiService.GetWithRetryAsync(
-                $"api/playlists/{addMediaToPlaylistId}/available-media");
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                await DisplayAlertAsync(
-                    "Error",
-                    "Unable to load available media.",
-                    "OK");
+                using var response = await _apiService.GetWithRetryAsync(
+                    $"api/playlists/{addMediaToPlaylistId}/available-media");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (await ErrorPresenter.ShowLoadFailureAsync(this, response, "load the available media"))
+                        continue;
+
+                    return;
+                }
+
+                var media = await response.Content
+                    .ReadFromJsonAsync<List<MediaResponse>>();
+
+                if (media == null)
+                {
+                    throw new InvalidOperationException(
+                        "The server returned invalid media data.");
+                }
+
+                _media = media;
+                AvailableMediaCollection.ItemsSource = _media;
                 return;
             }
-
-            var media = await response.Content
-                .ReadFromJsonAsync<List<MediaResponse>>();
-
-            if (media == null)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException(
-                    "The server returned invalid media data.");
+                if (!await ErrorPresenter.ShowLoadFailureAsync(this, ex, "load the available media"))
+                    return;
             }
-
-            _media = media;
-            AvailableMediaCollection.ItemsSource = _media;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            await DisplayAlertAsync(
-                "Session Expired",
-                "Please log in again.",
-                "OK");
-        }
-        catch (HttpRequestException)
-        {
-            await DisplayAlertAsync(
-                "Connection Error",
-                "Unable to contact the server. Please try again.",
-                "OK");
-        }
-        catch (TaskCanceledException)
-        {
-            await DisplayAlertAsync(
-                "Request Timed Out",
-                "The server took too long to respond.",
-                "OK");
-        }
-        catch (Exception)
-        {
-            await DisplayAlertAsync(
-                "Error",
-                "Unable to load available media.",
-                "OK");
         }
     }
 
@@ -189,27 +157,23 @@ public partial class ShowPlaylistsPage : ContentPage
             addButton.BindingContext is not MediaResponse media)
             return;
 
+        // One add at a time, so repeated clicks can't double-apply.
+        if (_isAddingMedia)
+            return;
+
+        _isAddingMedia = true;
         addButton.IsEnabled = false;
 
         try
         {
-            var token = await SecureStorage.Default.GetAsync("accessToken");
-
-            using var request = new HttpRequestMessage(
-                HttpMethod.Post,
+            using var response = await _apiService.PostEmptyAsync(
                 $"api/playlists/{addMediaToPlaylistId}/media/{media.MediaFileId}");
 
-            request.Headers.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
-            using var response = await _httpClient.SendAsync(request);
-
-            if (!response.IsSuccessStatusCode)
+            // 409: an earlier attempt already added it.
+            if (!response.IsSuccessStatusCode &&
+                response.StatusCode != HttpStatusCode.Conflict)
             {
-                await DisplayAlertAsync(
-                    "Error",
-                    "Could not add media to the playlist.",
-                    "OK");
+                await ErrorPresenter.ShowAsync(this, response, "add the media to the playlist");
                 return;
             }
 
@@ -217,22 +181,15 @@ public partial class ShowPlaylistsPage : ContentPage
             AvailableMediaCollection.ItemsSource = null;
             AvailableMediaCollection.ItemsSource = _media;
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
-            await DisplayAlertAsync(
-                "Connection Error",
-                "The connection was interrupted. The media may have been added. Reopen this window to refresh the list before trying again.",
-                "OK");
-        }
-        catch (TaskCanceledException)
-        {
-            await DisplayAlertAsync(
-                "Request Timed Out",
-                "The request timed out. The media may have been added. Refresh the list before retrying.",
-                "OK");
+            // Safe to try again: a repeat is reported as already added.
+            await ErrorPresenter.ShowAsync(
+                this, ex, "add the media to the playlist", mayHaveSucceeded: true);
         }
         finally
         {
+            _isAddingMedia = false;
             addButton.IsEnabled = true;
         }
     }

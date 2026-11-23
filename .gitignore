@@ -508,3 +508,5 @@ env/
 !.env.example
 
 secrets.json
+# Generated deployment artifacts (migration scripts etc.)
+deploy/out/

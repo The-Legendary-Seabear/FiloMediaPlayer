@@ -138,6 +138,16 @@
 	</ItemGroup>
 
 
+	<!-- API address baked into the app. Override when building for testers:
+	     dotnet publish ... -p:FiloApiBaseUrl=https://api.example.com/ -->
+	<PropertyGroup>
+		<FiloApiBaseUrl Condition="'$(FiloApiBaseUrl)' == ''">https://localhost:7038/</FiloApiBaseUrl>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<AssemblyMetadata Include="FiloApiBaseUrl" Value="$(FiloApiBaseUrl)" />
+	</ItemGroup>
+
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
 		<ProjectReference Include="..\Filo.AudioEffects.Windows\Filo.AudioEffects.Windows.csproj" />
 	</ItemGroup>
@@ -147,6 +157,12 @@
 		<ApplicationManifest>Platforms\Windows\app.manifest</ApplicationManifest>
 	</PropertyGroup>
 
+
+	<!-- WinRT.Host.dll needs its runtimeconfig to activate the audio effect.
+	     It is copied to the build output but not included in publish output. -->
+	<Target Name="PublishWinRTHostConfig" AfterTargets="Publish" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+		<Copy SourceFiles="$(OutDir)WinRT.Host.runtimeconfig.json" DestinationFolder="$(PublishDir)" Condition="Exists('$(OutDir)WinRT.Host.runtimeconfig.json')" />
+	</Target>
 
 	<Target Name="CopyX64WinRTHost" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0' And '$(RuntimeIdentifier)' == 'win-x64'">
 

@@ -17,6 +17,39 @@ namespace FiloMediaPlayer.WinUI
         public App()
         {
             this.InitializeComponent();
+
+            UnhandledException += OnUnhandledException;
+        }
+
+        // Safety net: a connection failure that escaped a page's own error
+        // handling is reported instead of closing the app. Other exceptions
+        // are left alone so real bugs still surface.
+        private void OnUnhandledException(
+            object sender,
+            Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            var exception = e.Exception is AggregateException aggregate
+                ? aggregate.GetBaseException()
+                : e.Exception;
+
+            if (exception == null || !FiloMediaPlayer.Services.ApiErrors.IsConnectionFailure(exception))
+                return;
+
+            e.Handled = true;
+
+            System.Diagnostics.Debug.WriteLine($"Unhandled connection error: {exception}");
+
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    if (Shell.Current?.CurrentPage is Page page)
+                        await FiloMediaPlayer.Services.ErrorPresenter.ShowAsync(page, exception, "complete that action");
+                }
+                catch (Exception)
+                {
+                }
+            });
         }
 
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();

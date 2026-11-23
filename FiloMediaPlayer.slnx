@@ -13,6 +13,7 @@
     <Platform Project="AnyCPU" />
     <Build Project="false" />
   </Project>
+  <Project Path="FiloMediaPlayer.Tests/FiloMediaPlayer.Tests.csproj" />
   <Project Path="FiloMediaPlayer/FiloMediaPlayer.csproj">
     <Platform Solution="*|x64" Project="x64" />
     <Deploy Solution="Debug|x64" />

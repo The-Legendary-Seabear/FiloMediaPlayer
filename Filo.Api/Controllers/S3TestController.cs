@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Filo.Api.Controllers
 {
+    [Filo.Api.Infrastructure.DevelopmentOnly]
     [ApiController]
     [Route("api/[controller]")]
     public class S3TestController : ControllerBase

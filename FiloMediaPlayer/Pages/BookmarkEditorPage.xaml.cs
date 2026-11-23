@@ -1,4 +1,4 @@
-
+﻿
 using FiloMediaPlayer.Models.Bookmarks;
 using FiloMediaPlayer.Services;
 using Microsoft.Maui.Graphics;
@@ -305,12 +305,9 @@ public partial class BookmarkEditorPage : ContentView
             {
                 if (!response.IsSuccessStatusCode)
                 {
-                    string error =
-                        await response.Content.ReadAsStringAsync();
-
                     await ShowEditorAlertAsync(
                         "Bookmark Error",
-                        $"Unable to save bookmark.\n{error}");
+                        await ApiErrors.DescribeAsync(response, "save the bookmark"));
 
                     return;
                 }
@@ -329,13 +326,15 @@ public partial class BookmarkEditorPage : ContentView
         {
             await ShowEditorAlertAsync(
                 "Connection Error",
-                "Unable to contact the server.");
+                "Unable to contact the server." +
+                (_editingBookmarkId.HasValue ? "" : ApiErrors.MayHaveSucceededHint));
         }
         catch (TaskCanceledException)
         {
             await ShowEditorAlertAsync(
                 "Timeout",
-                "The bookmark request timed out.");
+                "The bookmark request timed out." +
+                (_editingBookmarkId.HasValue ? "" : ApiErrors.MayHaveSucceededHint));
         }
         catch (Exception ex)
         {

@@ -1,23 +1,25 @@
 using Microsoft.Maui.Storage;
-using System.Net.Http.Headers;
 
 namespace FiloMediaPlayer.Pages;
 
 public partial class UploadMediaPage : ContentPage
 {
     private FileResult? _selectedFile;
-    private readonly HttpClient _httpClient;
+    private readonly FiloApiService _apiService;
 	private string defaultFileNamePlaceHolder = "No File Selected";
-    public UploadMediaPage()
+    private bool _isUploading;
+
+    public UploadMediaPage(FiloApiService apiService)
 	{
 		InitializeComponent();
-		_httpClient = new HttpClient();
-		_httpClient.BaseAddress = new Uri("https://localhost:7038/");
-
+        _apiService = apiService;
     }
 
 	private async void OnUploadMediaButton(object sender, EventArgs e)
 	{
+        if (_isUploading)
+            return;
+
 		var filePicked = await FilePicker.Default.PickAsync();
 		if(filePicked == null)
 		{
@@ -33,6 +35,8 @@ public partial class UploadMediaPage : ContentPage
 
 	private async void OnFinalMediaButton(object sender, EventArgs e)
 	{
+        if (_isUploading)
+            return;
 
         if (string.IsNullOrEmpty(UserUploadedMediaName.Text))
 		{
@@ -45,36 +49,51 @@ public partial class UploadMediaPage : ContentPage
             await DisplayAlertAsync("File", "Please Give a valid file", "Cancel");
             return;
         }
+
+        _isUploading = true;
 		UploadMediaButton.IsEnabled = false;
         UploadStatusPanel.IsVisible = true;
         UploadActivityIndicator.IsRunning = true;
 
-		var stream = await _selectedFile.OpenReadAsync();
-        var fileContent = new StreamContent(stream);
-        var form = new MultipartFormDataContent();
-		form.Add(fileContent, "file", _selectedFile.FileName);
-		form.Add(new StringContent(UserUploadedMediaName.Text), "name");
+        var file = _selectedFile;
+        string name = UserUploadedMediaName.Text;
 
-		var token = await SecureStorage.Default.GetAsync("accessToken");
-		if(string.IsNullOrEmpty(token))
-		{
+        try
+        {
+            using var response = await _apiService.PostMultipartAsync(
+                "api/media/upload",
+                async () =>
+                {
+                    var form = new MultipartFormDataContent();
+                    form.Add(new StreamContent(await file.OpenReadAsync()), "file", file.FileName);
+                    form.Add(new StringContent(name), "name");
+                    return form;
+                });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // Keep the selection so the user can try again.
+                await ErrorPresenter.ShowAsync(this, response, "upload the media");
+                return;
+            }
+
+            await DisplayAlertAsync("Media Upload", "Finished uploading media", "Close");
+            _selectedFile = null;
+            UserUploadedMediaName.Text = string.Empty;
+            SelectedMediaName.Text = defaultFileNamePlaceHolder;
+        }
+        catch (Exception ex)
+        {
+            await ErrorPresenter.ShowAsync(
+                this, ex, "upload the media", mayHaveSucceeded: true);
+        }
+        finally
+        {
+            _isUploading = false;
             UploadActivityIndicator.IsRunning = false;
             UploadStatusPanel.IsVisible = false;
             UploadMediaButton.IsEnabled = true;
-            await DisplayAlertAsync("Token Access", "Could not retrieve the access token", "Close");
-			return;
-		}
-
-
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-		var response = await _httpClient.PostAsync("api/media/upload", form);
-        UploadActivityIndicator.IsRunning = false;
-        UploadStatusPanel.IsVisible = false;
-		await DisplayAlertAsync("Media Upload", "Finished uploading media", "Close");
-		_selectedFile = null;
-		UserUploadedMediaName.Text = string.Empty;
-		SelectedMediaName.Text = defaultFileNamePlaceHolder;
-        UploadMediaButton.IsEnabled = true;
+        }
     }
 
 }

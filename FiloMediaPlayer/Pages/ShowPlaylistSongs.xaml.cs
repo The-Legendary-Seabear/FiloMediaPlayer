@@ -1,4 +1,4 @@
-using FiloMediaPlayer.DTOs;
+﻿using FiloMediaPlayer.DTOs;
 using Microsoft.Maui.Controls;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -31,11 +31,25 @@ public partial class ShowPlaylistSongs : ContentPage, IQueryAttributable
         _apiService = apiService;
     }
 
+    private bool _isLoadingSongs;
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
 
-        await LoadSongs();
+        if (_isLoadingSongs)
+            return;
+
+        _isLoadingSongs = true;
+
+        try
+        {
+            await LoadSongs();
+        }
+        finally
+        {
+            _isLoadingSongs = false;
+        }
     }
 
 
@@ -50,61 +64,42 @@ public partial class ShowPlaylistSongs : ContentPage, IQueryAttributable
 
     private async Task LoadSongs()
     {
-        try
+        // On failure the songs already shown stay visible.
+        while (true)
         {
-            using var response = await _apiService.GetWithRetryAsync(
-                $"api/playlists/{PlaylistId}/media");
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                await DisplayAlertAsync(
-                    "Error",
-                    "Unable to load playlist media.",
-                    "OK");
+                using var response = await _apiService.GetWithRetryAsync(
+                    $"api/playlists/{PlaylistId}/media");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (await ErrorPresenter.ShowLoadFailureAsync(this, response, "load the playlist's media"))
+                        continue;
+
+                    return;
+                }
+
+                var media = await response.Content
+                    .ReadFromJsonAsync<List<MediaResponse>>();
+
+                if (media == null)
+                {
+                    throw new InvalidOperationException(
+                        "The server returned invalid playlist media.");
+                }
+
+                _playlistMedia = media;
+
+                // Reapply the user's selected sorting mode.
+                ApplySort();
                 return;
             }
-
-            var media = await response.Content
-                .ReadFromJsonAsync<List<MediaResponse>>();
-
-            if (media == null)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException(
-                    "The server returned invalid playlist media.");
+                if (!await ErrorPresenter.ShowLoadFailureAsync(this, ex, "load the playlist's media"))
+                    return;
             }
-
-            _playlistMedia = media;
-
-            // Reapply the user's selected sorting mode.
-            ApplySort();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            await DisplayAlertAsync(
-                "Session Expired",
-                "Please log in again.",
-                "OK");
-        }
-        catch (HttpRequestException)
-        {
-            await DisplayAlertAsync(
-                "Connection Error",
-                "Unable to connect to the server. Please try again.",
-                "OK");
-        }
-        catch (TaskCanceledException)
-        {
-            await DisplayAlertAsync(
-                "Request Timed Out",
-                "The server took too long to respond.",
-                "OK");
-        }
-        catch (Exception)
-        {
-            await DisplayAlertAsync(
-                "Error",
-                "Unable to load playlist media.",
-                "OK");
         }
     }
 

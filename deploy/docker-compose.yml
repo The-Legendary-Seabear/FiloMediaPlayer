@@ -1,0 +1,85 @@
+# Filo server stack for a single EC2 instance.
+#
+#   cp .env.example .env    # fill in real values; never commit .env
+#   docker compose up -d --build
+#
+# Optional on-box PostgreSQL (budget option / local testing):
+#   docker compose --profile local-db up -d --build
+
+name: filo
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      FILO_DOMAIN: ${FILO_DOMAIN:?Set FILO_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ../Filo.Api
+    image: filo-api:${FILO_VERSION:-latest}
+    restart: unless-stopped
+    # Not published: only reachable through Caddy.
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Trust X-Forwarded-Proto/For from Caddy so HTTPS is detected.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: ${FILO_DB_CONNECTION:?Set FILO_DB_CONNECTION in .env}
+      AWS__Region: ${AWS_REGION:?Set AWS_REGION in .env}
+      AWS__BucketName: ${FILO_S3_BUCKET:?Set FILO_S3_BUCKET in .env}
+      ProcessingWorker__ApiKey: ${FILO_WORKER_KEY:?Set FILO_WORKER_KEY in .env}
+      # AWS credentials come from the EC2 instance role, not from here.
+    volumes:
+      - dataprotection-keys:/keys
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  worker:
+    build:
+      context: ../Filo.Processing
+    image: filo-worker:${FILO_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      # Internal Docker network; never leaves the instance.
+      FILO_API_URL: http://api:8080
+      FILO_WORKER_ID: ${FILO_WORKER_ID:-ec2-worker-1}
+      FILO_WORKER_KEY: ${FILO_WORKER_KEY:?Set FILO_WORKER_KEY in .env}
+    depends_on:
+      - api
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  db:
+    image: postgres:17
+    profiles: ["local-db"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: filo
+      POSTGRES_USER: filo
+      POSTGRES_PASSWORD: ${FILO_LOCAL_DB_PASSWORD:-change-me}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  caddy-data:
+  caddy-config:
+  dataprotection-keys:
+  postgres-data:

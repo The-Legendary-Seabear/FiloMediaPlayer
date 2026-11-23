@@ -140,6 +140,15 @@ public partial class RegisterPage : ContentPage
                 "The server returned an invalid response. Please try signing in before registering again.",
                 "OK");
         }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Registration error: {ex}");
+
+            await DisplayAlertAsync(
+                "Registration Error",
+                "An unexpected error occurred. Try signing in before registering again.",
+                "OK");
+        }
         finally
         {
             RegisterButton.IsEnabled = true;

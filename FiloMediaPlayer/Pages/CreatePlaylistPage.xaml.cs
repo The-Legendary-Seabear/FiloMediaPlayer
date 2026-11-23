@@ -1,48 +1,64 @@
 
-
 using FiloMediaPlayer.DTOs;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 
 namespace FiloMediaPlayer.Pages;
 
 public partial class CreatePlaylistPage : ContentPage
 {
-    private readonly HttpClient _httpClient;
-    public CreatePlaylistPage()
+    private readonly FiloApiService _apiService;
+    private bool _isCreating;
+
+    public CreatePlaylistPage(FiloApiService apiService)
 	{
 		InitializeComponent();
-        _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri("https://localhost:7038/");
+        _apiService = apiService;
     }
 
 	private async void OnCreatePlaylist(object sender, EventArgs e)
 	{
+        // Ignore repeated clicks while a request is in flight.
+        if (_isCreating)
+            return;
+
 		string playlistName = PlaylistNameEntry.Text;
 		if(string.IsNullOrWhiteSpace(playlistName))
 		{
 			await DisplayAlertAsync("Playlist Name", "Enter a valid playlist name", "Close");
 			return;
 		}
-		CreatePlaylistRequest req = new CreatePlaylistRequest(playlistName);
-		var token = await SecureStorage.Default.GetAsync("accessToken");
 
+        _isCreating = true;
 
-        if (string.IsNullOrEmpty(token))
-		{
-			await DisplayAlertAsync("Token", "Could not access the token", "Close");
-			return;
-		}
+        if (sender is Button button)
+            button.IsEnabled = false;
 
-		_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue ("Bearer", token);
-        var response = await _httpClient.PostAsJsonAsync("api/playlists/create", req);
-		if(response.IsSuccessStatusCode)
-		{
-			await DisplayAlertAsync("Playlist", "Playlist Created", "Ok");
-		} else
-		{
-            await DisplayAlertAsync("Playlist", "Something went wrong with creating the playlist", "Close");
+        try
+        {
+            CreatePlaylistRequest req = new CreatePlaylistRequest(playlistName);
+
+            using var response = await _apiService.PostAsync("api/playlists/create", req);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await ErrorPresenter.ShowAsync(this, response, "create the playlist");
+                return;
+            }
+
+            await DisplayAlertAsync("Playlist", "Playlist Created", "Ok");
+            PlaylistNameEntry.Text = string.Empty;
         }
+        catch (Exception ex)
+        {
+            // Not retried automatically: the playlist may already exist.
+            await ErrorPresenter.ShowAsync(
+                this, ex, "create the playlist", mayHaveSucceeded: true);
+        }
+        finally
+        {
+            _isCreating = false;
 
+            if (sender is Button finishedButton)
+                finishedButton.IsEnabled = true;
+        }
     }
 }

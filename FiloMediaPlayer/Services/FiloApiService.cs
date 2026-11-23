@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Net.Http.Json;
 
@@ -7,240 +9,202 @@ using System.Net.Http;
 
 namespace FiloMediaPlayer.Services
 {
+    /// <summary>
+    /// Sends authenticated requests to the Filo API.
+    /// </summary>
+    /// <remarks>
+    /// - An expired access token is refreshed once and the request is sent
+    ///   again. If the session cannot be renewed a
+    ///   <see cref="SessionExpiredException"/> is thrown.
+    /// - Only GET requests are retried on connection failures and
+    ///   temporary server errors, so a write is never sent twice.
+    /// - Timeouts throw <see cref="TaskCanceledException"/> with a
+    ///   <see cref="TimeoutException"/> inner exception.
+    /// </remarks>
     public class FiloApiService
     {
+        // Settable for tests.
+        internal static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(15);
+        internal static TimeSpan UploadTimeout = TimeSpan.FromMinutes(30);
+
+        // Delays between GET attempts (three attempts in total).
+        internal static TimeSpan[] RetryDelays =
+        {
+            TimeSpan.FromMilliseconds(500),
+            TimeSpan.FromMilliseconds(1000)
+        };
+
         private readonly HttpClient _httpClient;
         private readonly AuthService _authService;
+        private readonly ITokenStore _tokenStore;
 
-        public FiloApiService(HttpClient httpClient, AuthService authService)
+        public FiloApiService(
+            HttpClient httpClient,
+            AuthService authService,
+            ITokenStore tokenStore)
         {
             _httpClient = httpClient;
             _authService = authService;
+            _tokenStore = tokenStore;
         }
 
-        private async Task<HttpRequestMessage> CreateAuthenticatedRequestAsync(HttpMethod method, string endpoint)
-        {
-            var token = await SecureStorage.Default.GetAsync("accessToken");
-
-            var request = new HttpRequestMessage(method, endpoint);
-
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                request.Headers.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue(
-                        "Bearer", token);
-            }
-
-            return request;
-        }
-
-
-
-        public async Task<HttpResponseMessage> GetWithRetryAsync(
+        public Task<HttpResponseMessage> GetWithRetryAsync(
             string endpoint,
             CancellationToken cancellationToken = default)
-        {
-            const int maxAttempts = 3;
-            var delays = new[] { 500, 1000 };
+            => SendAsync(HttpMethod.Get, endpoint, null, retry: true,
+                DefaultTimeout, cancellationToken);
 
-            for (int attempt = 0; attempt < maxAttempts; attempt++)
+        public Task<HttpResponseMessage> PostAsync<T>(
+            string endpoint,
+            T data,
+            CancellationToken cancellationToken = default)
+            => SendAsync(HttpMethod.Post, endpoint, JsonBody(data), retry: false,
+                DefaultTimeout, cancellationToken);
+
+        public Task<HttpResponseMessage> PostEmptyAsync(
+            string endpoint,
+            CancellationToken cancellationToken = default)
+            => SendAsync(HttpMethod.Post, endpoint, null, retry: false,
+                DefaultTimeout, cancellationToken);
+
+        public Task<HttpResponseMessage> PutAsync<T>(
+            string endpoint,
+            T data,
+            CancellationToken cancellationToken = default)
+            => SendAsync(HttpMethod.Put, endpoint, JsonBody(data), retry: false,
+                DefaultTimeout, cancellationToken);
+
+        public Task<HttpResponseMessage> DeleteAsync(
+            string endpoint,
+            CancellationToken cancellationToken = default)
+            => SendAsync(HttpMethod.Delete, endpoint, null, retry: false,
+                DefaultTimeout, cancellationToken);
+
+        /// <summary>
+        /// Uploads multipart content. <paramref name="createContent"/> is
+        /// called for each send (the upload is repeated once if the access
+        /// token had to be refreshed), so it must open a fresh stream.
+        /// </summary>
+        public Task<HttpResponseMessage> PostMultipartAsync(
+            string endpoint,
+            Func<Task<HttpContent>> createContent,
+            CancellationToken cancellationToken = default)
+            => SendAsync(HttpMethod.Post, endpoint, createContent, retry: false,
+                UploadTimeout, cancellationToken);
+
+        private static Func<Task<HttpContent>> JsonBody<T>(T data)
+            => () => Task.FromResult<HttpContent>(JsonContent.Create(data));
+
+        private async Task<HttpResponseMessage> SendAsync(
+            HttpMethod method,
+            string endpoint,
+            Func<Task<HttpContent>>? createContent,
+            bool retry,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
+        {
+            int maxAttempts = retry ? RetryDelays.Length + 1 : 1;
+
+            for (int attempt = 1; ; attempt++)
             {
                 try
                 {
-                    using var request = await CreateAuthenticatedRequestAsync(
-                        HttpMethod.Get, endpoint);
+                    var response = await SendAuthorizedAsync(
+                        method, endpoint, createContent, timeout, cancellationToken);
 
-                    var failedToken = request.Headers.Authorization?.Parameter;
-
-                    var response = await _httpClient.SendAsync(
-                        request, cancellationToken);
-
-                    // Expired access token: refresh and retry once.
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        response.Dispose();
-
-                        var newToken = await _authService.RefreshAccessTokenAsync(
-                            failedToken ?? "");
-
-                        if (string.IsNullOrEmpty(newToken))
-                        {
-                            throw new UnauthorizedAccessException(
-                                "Your session has expired. Please log in again.");
-                        }
-
-                        using var retryRequest = new HttpRequestMessage(
-                            HttpMethod.Get, endpoint);
-
-                        retryRequest.Headers.Authorization =
-                            new System.Net.Http.Headers.AuthenticationHeaderValue(
-                                "Bearer", newToken);
-
-                        return await _httpClient.SendAsync(
-                            retryRequest, cancellationToken);
-                    }
-
-                    if (response.IsSuccessStatusCode)
-                        return response;
-
-                    bool retryable = response.StatusCode is
-                        System.Net.HttpStatusCode.RequestTimeout or
-                        System.Net.HttpStatusCode.TooManyRequests or
-                        System.Net.HttpStatusCode.BadGateway or
-                        System.Net.HttpStatusCode.ServiceUnavailable or
-                        System.Net.HttpStatusCode.GatewayTimeout;
-
-                    if (!retryable || attempt == maxAttempts - 1)
+                    if (attempt >= maxAttempts || !IsTransient(response.StatusCode))
                         return response;
 
                     response.Dispose();
                 }
-                catch (HttpRequestException) when (attempt < maxAttempts - 1)
+                catch (HttpRequestException) when (attempt < maxAttempts)
                 {
-                    // Temporary network failure.
-                }
-                catch (TaskCanceledException)
-                    when (!cancellationToken.IsCancellationRequested &&
-                          attempt < maxAttempts - 1)
-                {
-                    // Request timed out.
+                    // Connection failure: try again after a short delay.
+                    // Timeouts are not retried; the user already waited.
                 }
 
-                await Task.Delay(delays[attempt], cancellationToken);
+                await Task.Delay(RetryDelays[attempt - 1], cancellationToken);
             }
-
-            throw new InvalidOperationException("Unable to complete API request.");
         }
 
-        public async Task<HttpResponseMessage> PostAsync<T>(
-    string endpoint,
-    T data,
-    CancellationToken cancellationToken = default)
-        {
-            using var request = await CreateAuthenticatedRequestAsync(
-                HttpMethod.Post, endpoint);
-
-            request.Content = JsonContent.Create(data);
-
-            var failedToken = request.Headers.Authorization?.Parameter;
-
-            var response = await _httpClient.SendAsync(
-                request, cancellationToken);
-
-            if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
-            {
-                return response;
-            }
-
-            response.Dispose();
-
-            var newToken = await _authService.RefreshAccessTokenAsync(
-                failedToken ?? "");
-
-            if (string.IsNullOrEmpty(newToken))
-            {
-                throw new UnauthorizedAccessException(
-                    "Your session has expired. Please log in again.");
-            }
-
-            using var retryRequest = new HttpRequestMessage(
-                HttpMethod.Post, endpoint);
-
-            retryRequest.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue(
-                    "Bearer", newToken);
-
-            retryRequest.Content = JsonContent.Create(data);
-
-            return await _httpClient.SendAsync(
-                retryRequest, cancellationToken);
-        }
-
-
-        public async Task<HttpResponseMessage> PutAsync<T>(
+        private async Task<HttpResponseMessage> SendAuthorizedAsync(
+            HttpMethod method,
             string endpoint,
-            T data,
-            CancellationToken cancellationToken = default)
+            Func<Task<HttpContent>>? createContent,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
         {
-            using var request = await CreateAuthenticatedRequestAsync(
-                HttpMethod.Put, endpoint);
+            var token = await _tokenStore.GetAccessTokenAsync();
 
-            request.Content = JsonContent.Create(data);
+            var response = await SendOnceAsync(
+                method, endpoint, createContent, token, timeout, cancellationToken);
 
-            var failedToken = request.Headers.Authorization?.Parameter;
-
-            var response = await _httpClient.SendAsync(
-                request, cancellationToken);
-
-            if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
+            if (response.StatusCode != HttpStatusCode.Unauthorized)
                 return response;
 
+            // Expired access token: refresh and retry once.
             response.Dispose();
 
             var newToken = await _authService.RefreshAccessTokenAsync(
-                failedToken ?? "");
+                token ?? "", cancellationToken);
 
             if (string.IsNullOrEmpty(newToken))
+                throw new SessionExpiredException();
+
+            response = await SendOnceAsync(
+                method, endpoint, createContent, newToken, timeout, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                throw new UnauthorizedAccessException(
-                    "Your session has expired. Please log in again.");
+                response.Dispose();
+                throw new SessionExpiredException();
             }
 
-            using var retryRequest = new HttpRequestMessage(
-                HttpMethod.Put, endpoint);
-
-            retryRequest.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue(
-                    "Bearer", newToken);
-
-            retryRequest.Content = JsonContent.Create(data);
-
-            return await _httpClient.SendAsync(
-                retryRequest, cancellationToken);
+            return response;
         }
 
-
-
-        public async Task<HttpResponseMessage> DeleteAsync(
+        private async Task<HttpResponseMessage> SendOnceAsync(
+            HttpMethod method,
             string endpoint,
-            CancellationToken cancellationToken = default)
+            Func<Task<HttpContent>>? createContent,
+            string? token,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
         {
-            using var request = await CreateAuthenticatedRequestAsync(
-                HttpMethod.Delete, endpoint);
+            using var request = new HttpRequestMessage(method, endpoint);
 
-            var failedToken = request.Headers.Authorization?.Parameter;
-
-            var response = await _httpClient.SendAsync(
-                request, cancellationToken);
-
-            if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
-                return response;
-
-            response.Dispose();
-
-            var newToken = await _authService.RefreshAccessTokenAsync(
-                failedToken ?? "");
-
-            if (string.IsNullOrEmpty(newToken))
+            if (!string.IsNullOrWhiteSpace(token))
             {
-                throw new UnauthorizedAccessException(
-                    "Your session has expired. Please log in again.");
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
             }
 
-            using var retryRequest = new HttpRequestMessage(
-                HttpMethod.Delete, endpoint);
+            if (createContent != null)
+                request.Content = await createContent();
 
-            retryRequest.Headers.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue(
-                    "Bearer", newToken);
+            using var timeoutCts =
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            return await _httpClient.SendAsync(
-                retryRequest, cancellationToken);
+            timeoutCts.CancelAfter(timeout);
+
+            try
+            {
+                return await _httpClient.SendAsync(request, timeoutCts.Token);
+            }
+            catch (OperationCanceledException ex)
+                when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new TaskCanceledException(
+                    "The server took too long to respond.",
+                    new TimeoutException(ex.Message, ex));
+            }
         }
 
-
-
-
-
+        private static bool IsTransient(HttpStatusCode statusCode) =>
+            statusCode is HttpStatusCode.RequestTimeout
+                or HttpStatusCode.TooManyRequests
+                or HttpStatusCode.BadGateway
+                or HttpStatusCode.ServiceUnavailable
+                or HttpStatusCode.GatewayTimeout;
     }
 }

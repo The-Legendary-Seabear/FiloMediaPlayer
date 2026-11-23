@@ -1,5 +1,4 @@
-using FiloMediaPlayer.DTOs;
-using System.Net.Http.Headers;
+﻿using FiloMediaPlayer.DTOs;
 using System.Net.Http.Json;
 
 namespace FiloMediaPlayer.Pages;
@@ -7,18 +6,23 @@ namespace FiloMediaPlayer.Pages;
 public partial class EditMediaPage : ContentPage, IQueryAttributable
 {
     public int MediaFileId { get; private set; }
-    private readonly HttpClient _httpClient;
-    private bool _isInitialized = false;
+    private readonly FiloApiService _apiService;
+    private bool _mediaLoaded;
+    private bool _thumbnailsLoaded;
+    private bool _isLoading;
+    private bool _isSaving;
 
     private CancellationTokenSource? _conversionCts;
     private int? _conversionJobId;
     private string _mediaContentType = string.Empty;
 
-    public EditMediaPage()
+    // Consecutive failed status checks tolerated before monitoring stops.
+    private const int MaxMonitorFailures = 10;
+
+    public EditMediaPage(FiloApiService apiService)
 	{
 		InitializeComponent();
-        _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri("https://localhost:7038/");
+        _apiService = apiService;
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -32,70 +36,119 @@ public partial class EditMediaPage : ContentPage, IQueryAttributable
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (!_isInitialized)
+
+        // A failed load is retried the next time the page appears.
+        // Each part loads once so a retry never overwrites the user's edits.
+        if ((!_mediaLoaded || !_thumbnailsLoaded) && !_isLoading)
         {
+            _isLoading = true;
 
-            await LoadMedia();
-            await LoadThumbnails();
+            try
+            {
+                if (!_mediaLoaded)
+                    _mediaLoaded = await LoadMedia();
 
-            _isInitialized = true;
+                if (_mediaLoaded && !_thumbnailsLoaded)
+                    _thumbnailsLoaded = await LoadThumbnails();
+            }
+            finally
+            {
+                _isLoading = false;
+            }
         }
     }
 
-    private async Task LoadMedia()
+    private async Task<bool> LoadMedia()
     {
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await _httpClient.GetAsync($"api/media/{MediaFileId}");
-
-        if (!response.IsSuccessStatusCode)
+        while (true)
         {
-            await DisplayAlertAsync("Error", "Failed to load media.", "Close");
-            return;
+            try
+            {
+                using var response = await _apiService.GetWithRetryAsync($"api/media/{MediaFileId}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (await ErrorPresenter.ShowLoadFailureAsync(this, response, "load the media"))
+                        continue;
+
+                    return false;
+                }
+
+                var media = await response.Content.ReadFromJsonAsync<MediaResponse>();
+
+                if (media is null)
+                {
+                    await DisplayAlertAsync(
+                        "Error",
+                        "The API returned invalid media information.",
+                        "Close");
+
+                    return false;
+                }
+
+                MediaTitleEntry.Text = media.Title;
+                ThumbnailPicker.SelectedThumbnailId = media.ThumbnailId;
+
+                _mediaContentType = media.ContentType ?? string.Empty;
+
+                ConfigureConversionFormats();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (await ErrorPresenter.ShowLoadFailureAsync(this, ex, "load the media"))
+                    continue;
+
+                return false;
+            }
         }
-
-        var media = await response.Content.ReadFromJsonAsync<MediaResponse>();
-
-
-        if (media is null)
-        {
-            await DisplayAlertAsync(
-                "Error",
-                "The API returned invalid media information.",
-                "Close");
-
-            return;
-        }
-
-        MediaTitleEntry.Text = media.Title;
-        ThumbnailPicker.SelectedThumbnailId = media.ThumbnailId;
-
-
-
-        _mediaContentType = media.ContentType ?? string.Empty;
-
-        ConfigureConversionFormats();
     }
 
-    public async Task LoadThumbnails()
+    public async Task<bool> LoadThumbnails()
     {
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await _httpClient.GetAsync($"api/thumbnails");
-        if (!response.IsSuccessStatusCode)
+        while (true)
         {
-            await DisplayAlertAsync("Error", "Something went wrong", "Close");
-            return;
+            try
+            {
+                using var response = await _apiService.GetWithRetryAsync("api/thumbnails");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (await ErrorPresenter.ShowLoadFailureAsync(this, response, "load your thumbnails"))
+                        continue;
+
+                    return false;
+                }
+
+                var thumbnails = await response.Content.ReadFromJsonAsync<List<ThumbnailResponse>>() ?? new List<ThumbnailResponse>();
+                ThumbnailPicker.Thumbnails = thumbnails;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (await ErrorPresenter.ShowLoadFailureAsync(this, ex, "load your thumbnails"))
+                    continue;
+
+                return false;
+            }
         }
-        var thumbnails = await response.Content.ReadFromJsonAsync<List<ThumbnailResponse>>() ?? new List<ThumbnailResponse>(); ;
-        ThumbnailPicker.Thumbnails = thumbnails;
     }
 
     public async void OnSaveChangesClicked(object sender, EventArgs e)
     {
+        if (_isSaving)
+            return;
+
+        // Saving before the media loaded would overwrite it with blanks.
+        if (!_mediaLoaded)
+        {
+            await DisplayAlertAsync(
+                "Not Loaded",
+                "The media hasn't loaded yet, so it can't be saved. Go back and open it again.",
+                "Close");
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(MediaTitleEntry.Text))
         {
             await DisplayAlertAsync("Error", "Please enter a valid media title.", "Close");
@@ -108,21 +161,37 @@ public partial class EditMediaPage : ContentPage, IQueryAttributable
             ThumbnailId = ThumbnailPicker.SelectedThumbnailId
         };
 
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
+        _isSaving = true;
 
-        var response = await _httpClient.PutAsJsonAsync(
-            $"api/media/{MediaFileId}", request);
+        if (sender is Button button)
+            button.IsEnabled = false;
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            await DisplayAlertAsync("Error", "Failed to update media.", "Close");
-            return;
-        }
+            using var response = await _apiService.PutAsync(
+                $"api/media/{MediaFileId}", request);
 
-        await DisplayAlertAsync("Success", "Media updated successfully.", "Close");
-        await Shell.Current.GoToAsync("..");
+            if (!response.IsSuccessStatusCode)
+            {
+                await ErrorPresenter.ShowAsync(this, response, "update the media");
+                return;
+            }
+
+            await DisplayAlertAsync("Success", "Media updated successfully.", "Close");
+            await Shell.Current.GoToAsync("..");
+        }
+        catch (Exception ex)
+        {
+            // The form keeps the user's changes so they can save again.
+            await ErrorPresenter.ShowAsync(this, ex, "update the media", mayHaveSucceeded: true);
+        }
+        finally
+        {
+            _isSaving = false;
+
+            if (sender is Button finishedButton)
+                finishedButton.IsEnabled = true;
+        }
     }
 
     private async void OnManagePlaylistsClicked(object sender, EventArgs e)
@@ -211,18 +280,10 @@ public partial class EditMediaPage : ContentPage, IQueryAttributable
         ConversionActivityIndicator.IsVisible = true;
         ConversionActivityIndicator.IsRunning = true;
 
+        _conversionJobId = null;
+
         try
         {
-            var token = await SecureStorage.Default
-                .GetAsync("accessToken");
-
-            if (string.IsNullOrWhiteSpace(token))
-                throw new InvalidOperationException(
-                    "You must be signed in to convert media.");
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
             var request = new
             {
                 MediaFileId,
@@ -230,16 +291,15 @@ public partial class EditMediaPage : ContentPage, IQueryAttributable
                 VideoCodec = codec
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            using var response = await _apiService.PostAsync(
                 "api/processing-jobs/conversion",
                 request);
 
             if (!response.IsSuccessStatusCode)
             {
-                var message = await response.Content.ReadAsStringAsync();
-
-                throw new HttpRequestException(
-                    $"Unable to queue conversion: {message}");
+                ConversionStatusLabel.Text = "Unable to start the conversion.";
+                await ErrorPresenter.ShowAsync(this, response, "start the conversion");
+                return;
             }
 
             var result = await response.Content
@@ -258,18 +318,28 @@ public partial class EditMediaPage : ContentPage, IQueryAttributable
                 _conversionJobId.Value,
                 _conversionCts.Token);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex) when (!ApiErrors.IsTimeout(ex))
         {
             // Leaving the page stops monitoring, not the server job.
         }
         catch (Exception ex)
         {
-            ConversionStatusLabel.Text = "Unable to start or monitor conversion.";
+            if (_conversionJobId.HasValue && ApiErrors.IsConnectionFailure(ex))
+            {
+                // Only monitoring failed; the job keeps running on the server.
+                ConversionStatusLabel.Text =
+                    $"Lost connection while checking job {_conversionJobId}. " +
+                    "The conversion continues on the server; check your library later.";
+            }
+            else
+            {
+                ConversionStatusLabel.Text = "Unable to start or monitor conversion.";
 
-            await DisplayAlertAsync(
-                "Conversion error",
-                ex.Message,
-                "Close");
+                // A failed submit may still have queued the job.
+                await ErrorPresenter.ShowAsync(
+                    this, ex, "start the conversion",
+                    mayHaveSucceeded: !_conversionJobId.HasValue);
+            }
         }
         finally
         {
@@ -285,23 +355,43 @@ public partial class EditMediaPage : ContentPage, IQueryAttributable
         int jobId,
         CancellationToken cancellationToken)
     {
+        int consecutiveFailures = 0;
+
         while (!cancellationToken.IsCancellationRequested)
         {
             await Task.Delay(3000, cancellationToken);
 
-            var response = await _httpClient.GetAsync(
-                $"api/processing-jobs/{jobId}",
-                cancellationToken);
+            System.Text.Json.JsonElement job;
 
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                throw new HttpRequestException(
-                    "Unable to retrieve conversion status.");
-            }
+                using var response = await _apiService.GetWithRetryAsync(
+                    $"api/processing-jobs/{jobId}",
+                    cancellationToken);
 
-            var job = await response.Content
-                .ReadFromJsonAsync<System.Text.Json.JsonElement>(
-                    cancellationToken: cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException(
+                        "Unable to retrieve conversion status.",
+                        null,
+                        response.StatusCode);
+                }
+
+                job = await response.Content
+                    .ReadFromJsonAsync<System.Text.Json.JsonElement>(
+                        cancellationToken: cancellationToken);
+
+                consecutiveFailures = 0;
+            }
+            catch (Exception ex) when (
+                ApiErrors.IsConnectionFailure(ex) &&
+                ++consecutiveFailures < MaxMonitorFailures)
+            {
+                // Brief outage: keep checking the same job.
+                ConversionStatusLabel.Text =
+                    $"Job {jobId}: Connection lost, reconnecting...";
+                continue;
+            }
 
             var statusElement = job.GetProperty("status");
 

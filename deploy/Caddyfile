@@ -1,0 +1,20 @@
+# Caddy obtains and renews a Let's Encrypt certificate for FILO_DOMAIN
+# automatically. The domain's DNS A record must point at this server and
+# ports 80 and 443 must be open.
+{$FILO_DOMAIN} {
+	encode gzip
+
+	# Only the API is served. Media is streamed from S3 via presigned URLs.
+	reverse_proxy api:8080 {
+		# Large media uploads (the API accepts up to 6 GB).
+		transport http {
+			read_timeout 30m
+			write_timeout 30m
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

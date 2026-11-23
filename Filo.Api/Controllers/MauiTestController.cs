@@ -2,6 +2,7 @@
 
 namespace Filo.Api.Controllers
 {
+    [Filo.Api.Infrastructure.DevelopmentOnly]
     [ApiController]
     [Route("api/[controller]")]
     public class MauiTestController : ControllerBase

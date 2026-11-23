@@ -1,6 +1,6 @@
-
+﻿
 using FiloMediaPlayer.DTOs;
-using System.Net.Http.Headers;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace FiloMediaPlayer.Pages;
@@ -9,7 +9,8 @@ public partial class ManageMediaPlaylistsPage : ContentPage, IQueryAttributable
 {
     public int MediaFileId { get; private set; }
 
-    private readonly HttpClient _httpClient;
+    private readonly FiloApiService _apiService;
+    private bool _isBusy;
 
     private List<PlaylistResponse> _currentPlaylists = new();
     private List<PlaylistResponse> _availablePlaylists = new();
@@ -18,14 +19,11 @@ public partial class ManageMediaPlaylistsPage : ContentPage, IQueryAttributable
 
     public string PlaylistActionText => _showingCurrentPlaylists ? "Remove" : "Add";
 
-    public ManageMediaPlaylistsPage()
+    public ManageMediaPlaylistsPage(FiloApiService apiService)
     {
         InitializeComponent();
 
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("https://localhost:7038/")
-        };
+        _apiService = apiService;
 
         BindingContext = this;
     }
@@ -42,52 +40,58 @@ public partial class ManageMediaPlaylistsPage : ContentPage, IQueryAttributable
     {
         base.OnAppearing();
 
-        await LoadCurrentPlaylists();
-        await LoadAvailablePlaylists();
+        if (_isBusy)
+            return;
 
-        UpdatePlaylistDisplay();
+        _isBusy = true;
+
+        try
+        {
+            await LoadAllPlaylists();
+        }
+        finally
+        {
+            _isBusy = false;
+        }
     }
 
 
-    private async Task LoadCurrentPlaylists()
+    // On failure the lists already shown are kept.
+    private async Task LoadAllPlaylists()
     {
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await _httpClient.GetAsync(
-            $"api/media/{MediaFileId}/playlists");
-
-        if (!response.IsSuccessStatusCode)
+        while (true)
         {
-            await DisplayAlertAsync("Error", "Failed to load playlists.", "Close");
-            return;
-        }
+            try
+            {
+                var current = await LoadPlaylistList($"api/media/{MediaFileId}/playlists");
+                var available = await LoadPlaylistList($"api/media/{MediaFileId}/available-playlists");
 
-        _currentPlaylists =
-            await response.Content.ReadFromJsonAsync<List<PlaylistResponse>>()
-            ?? new List<PlaylistResponse>();
+                _currentPlaylists = current;
+                _availablePlaylists = available;
+                UpdatePlaylistDisplay();
+                return;
+            }
+            catch (Exception ex)
+            {
+                if (!await ErrorPresenter.ShowLoadFailureAsync(this, ex, "load the playlists"))
+                    return;
+            }
+        }
     }
 
-    private async Task LoadAvailablePlaylists()
+    private async Task<List<PlaylistResponse>> LoadPlaylistList(string endpoint)
     {
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await _httpClient.GetAsync(
-            $"api/media/{MediaFileId}/available-playlists");
+        using var response = await _apiService.GetWithRetryAsync(endpoint);
 
         if (!response.IsSuccessStatusCode)
         {
-            await DisplayAlertAsync("Error", "Failed to load available playlists.", "Close");
-            return;
+            throw new HttpRequestException(
+                await ApiErrors.DescribeAsync(response, "load the playlists"),
+                null,
+                response.StatusCode);
         }
 
-        _availablePlaylists =
-            await response.Content.ReadFromJsonAsync<List<PlaylistResponse>>()
+        return await response.Content.ReadFromJsonAsync<List<PlaylistResponse>>()
             ?? new List<PlaylistResponse>();
     }
 
@@ -118,53 +122,46 @@ public partial class ManageMediaPlaylistsPage : ContentPage, IQueryAttributable
             return;
         }
 
+        // One change at a time, so repeated clicks can't double-apply.
+        if (_isBusy)
+            return;
+
+        _isBusy = true;
         button.IsEnabled = false;
+        bool removing = _showingCurrentPlaylists;
 
         try
         {
-            var token = await SecureStorage.Default.GetAsync("accessToken");
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
-            HttpResponseMessage response;
-
-            if (_showingCurrentPlaylists)
-            {
-                response = await _httpClient.DeleteAsync(
+            using var response = removing
+                ? await _apiService.DeleteAsync(
+                    $"api/playlists/{playlist.PlaylistId}/media/{MediaFileId}")
+                : await _apiService.PostEmptyAsync(
                     $"api/playlists/{playlist.PlaylistId}/media/{MediaFileId}");
-            }
-            else
-            {
-                response = await _httpClient.PostAsync(
-                    $"api/playlists/{playlist.PlaylistId}/media/{MediaFileId}",
-                    null);
-            }
 
-            if (!response.IsSuccessStatusCode)
+            // 404 on remove / 409 on add: an earlier attempt already
+            // made this change, so just refresh the lists.
+            bool alreadyDone = removing
+                ? response.StatusCode == HttpStatusCode.NotFound
+                : response.StatusCode == HttpStatusCode.Conflict;
+
+            if (!response.IsSuccessStatusCode && !alreadyDone)
             {
-                await DisplayAlertAsync(
-                    "Error",
-                    "Failed to update playlist membership.",
-                    "Close");
+                await ErrorPresenter.ShowAsync(this, response, "update playlist membership");
                 return;
             }
 
-            await LoadCurrentPlaylists();
-            await LoadAvailablePlaylists();
-
-            UpdatePlaylistDisplay();
+            await LoadAllPlaylists();
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
-            await DisplayAlertAsync(
-                "Connection Error",
-                "Unable to connect to the server.",
-                "Close");
+            // Safe to try again: a repeat is reported as already done.
+            await ErrorPresenter.ShowAsync(
+                this, ex, "update playlist membership", mayHaveSucceeded: true);
         }
         finally
         {
             button.IsEnabled = true;
+            _isBusy = false;
         }
     }
 

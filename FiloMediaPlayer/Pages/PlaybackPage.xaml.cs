@@ -8,7 +8,6 @@ using FiloMediaPlayer.Services;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.IO.MemoryMappedFiles;
 
 namespace FiloMediaPlayer.Pages;
 
@@ -33,9 +32,6 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     private readonly BookmarkTimelineDrawable _bookmarkTimelineDrawable = new();
     private List<BookmarkResponse> _timelineBookmarks = new();
 
-    private MemoryMappedFile? _normalizationMemory;
-    private MemoryMappedViewAccessor? _normalizationWriter;
-
     public enum PlaybackMode
     {
         Normal,
@@ -55,10 +51,6 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     public PlaybackPage(FiloApiService apiService)
     {
         InitializeComponent();
-
-        #if WINDOWS
-            InitializeNormalizationMemory();
-        #endif
 
         MediaPlayer.PropertyChanged += (sender, e) =>
         {
@@ -444,16 +436,17 @@ public partial class PlaybackPage : ContentPage, IQueryAttributable
     }
 
 
-    private void OnNormalizationToggled(object sender, ToggledEventArgs e)
+    private async void OnNormalizationToggled(object sender, ToggledEventArgs e)
     {
         _normalizationEnabled = e.Value;
 
-#if WINDOWS
-            UpdateWindowsNormalizationGain();
-#endif
-
         Debug.WriteLine(
             $"Normalization: {(_normalizationEnabled ? "ON" : "OFF")}");
+
+#if WINDOWS
+        UpdateWindowsNormalizationGain();
+        await FlushWindowsAudioPipelineAsync();
+#endif
     }
 
 
@@ -1153,6 +1146,8 @@ private void InspectWindowsPlayer(double gainDb)
     }
 
     // New native player: attach a new effect.
+    // The effect reads "GainDb" from this PropertySet on every audio
+    // frame, so later writes to it apply during playback.
     var configuration =
         new Windows.Foundation.Collections.PropertySet
         {
@@ -1161,19 +1156,17 @@ private void InspectWindowsPlayer(double gainDb)
 
     try
     {
+        // Optional: if the effect cannot be inserted, the media still
+        // plays without normalization instead of failing.
         nativePlayer.AddAudioEffect(
             "Filo.AudioEffects.Windows.NormalizationAudioEffect",
-            false,
+            true,
             configuration);
 
-        nativePlayer.MediaFailed += (sender, args) =>
-        {
-            Debug.WriteLine(
-                $"Normalization: Native player failed: {args.Error}");
+        if (_normalizationNativePlayer != null)
+            _normalizationNativePlayer.MediaFailed -= OnNativePlayerMediaFailed;
 
-            Debug.WriteLine(
-                $"Normalization: Error message: {args.ErrorMessage}");
-        };
+        nativePlayer.MediaFailed += OnNativePlayerMediaFailed;
 
         _normalizationNativePlayer = nativePlayer;
         _normalizationConfiguration = configuration;
@@ -1195,45 +1188,56 @@ private void UpdateWindowsNormalizationGain()
         ? _currentNormalizationGainDb
         : 0.0;
 
-    if (_normalizationWriter != null)
-    {
-        _normalizationWriter.Write(0, gain);
+    // Not attached yet: InspectWindowsPlayer creates the
+    // configuration with the current gain.
+    if (_normalizationConfiguration == null)
+        return;
 
-        Debug.WriteLine(
-            $"Normalization: Shared memory gain written = {gain:F2} dB");
-    }
-
-    // Keep the existing mechanism temporarily.
-    Filo.AudioEffects.Windows.NormalizationAudioEffect.SetLiveGain(gain);
+    _normalizationConfiguration["GainDb"] = gain;
 
     Debug.WriteLine(
-        $"Normalization: Live gain requested = {gain:F2} dB");
+        $"Normalization: Gain requested = {gain:F2} dB");
 }
 
-private void InitializeNormalizationMemory()
+// Media Foundation runs the effect ahead of what is being heard
+// (about 1.5 s for WAV/FLAC, about 15 s for MP3), so a new gain
+// would otherwise only be audible once that buffered audio has
+// played. A small backward seek discards the buffered audio and
+// it is processed again with the new gain.
+private async Task FlushWindowsAudioPipelineAsync()
 {
+    if (_normalizationConfiguration == null || _isSeeking)
+        return;
+
+    if (MediaPlayer.CurrentState is not (MediaElementState.Playing
+        or MediaElementState.Paused))
+        return;
+
     try
     {
-        _normalizationMemory = MemoryMappedFile.CreateOrOpen(
-            @"Local\FiloNormalizationGain",
-            sizeof(double));
+        // Seeking to the current position is ignored, so move slightly.
+        var offset = TimeSpan.FromMilliseconds(50);
+        var position = MediaPlayer.Position;
 
-        _normalizationWriter =
-            _normalizationMemory.CreateViewAccessor(
-                0,
-                sizeof(double),
-                MemoryMappedFileAccess.ReadWrite);
-
-        _normalizationWriter.Write(0, 0.0);
-
-        Debug.WriteLine(
-            "Normalization: Shared memory initialized.");
+        await MediaPlayer.SeekTo(
+            position > offset ? position - offset : position + offset);
     }
     catch (Exception ex)
     {
         Debug.WriteLine(
-            $"Normalization: Shared memory initialization failed: {ex}");
+            $"Normalization: Pipeline flush failed: {ex.Message}");
     }
+}
+
+private void OnNativePlayerMediaFailed(
+    Windows.Media.Playback.MediaPlayer sender,
+    Windows.Media.Playback.MediaPlayerFailedEventArgs args)
+{
+    Debug.WriteLine(
+        $"Normalization: Native player failed: {args.Error}");
+
+    Debug.WriteLine(
+        $"Normalization: Error message: {args.ErrorMessage}");
 }
 
 

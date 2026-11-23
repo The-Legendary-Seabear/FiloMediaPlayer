@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!--
+    The client's HTTP layer has no MAUI dependencies, so the same source
+    files are compiled here and tested directly.
+  -->
+  <ItemGroup>
+    <Compile Include="..\FiloMediaPlayer\Services\FiloApiService.cs" Link="Client\FiloApiService.cs" />
+    <Compile Include="..\FiloMediaPlayer\Services\AuthService.cs" Link="Client\AuthService.cs" />
+    <Compile Include="..\FiloMediaPlayer\Services\ApiErrors.cs" Link="Client\ApiErrors.cs" />
+    <Compile Include="..\FiloMediaPlayer\Services\ITokenStore.cs" Link="Client\ITokenStore.cs" />
+    <Compile Include="..\FiloMediaPlayer\Services\SessionExpiredException.cs" Link="Client\SessionExpiredException.cs" />
+    <Compile Include="..\FiloMediaPlayer\DTOs\LoginInformation.cs" Link="Client\LoginInformation.cs" />
+    <Compile Include="..\FiloMediaPlayer\DTOs\LoginResponse.cs" Link="Client\LoginResponse.cs" />
+    <Compile Include="..\FiloMediaPlayer\DTOs\RefreshRequest.cs" Link="Client\RefreshRequest.cs" />
+  </ItemGroup>
+
+</Project>

@@ -1,7 +1,7 @@
-
+﻿
 
 using FiloMediaPlayer.DTOs;
-using System.Net.Http.Headers;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace FiloMediaPlayer.Pages;
@@ -9,18 +9,18 @@ namespace FiloMediaPlayer.Pages;
 public partial class ManagePlaylistMediaPage : ContentPage, IQueryAttributable
 {
     public int PlaylistId { get; private set; }
-    private readonly HttpClient _httpClient;
+    private readonly FiloApiService _apiService;
+    private bool _isBusy;
 
     private List<MediaResponse> _currentMedia = new();
     private List<MediaResponse> _availableMedia = new();
     private bool _showingCurrentMedia = true;
 
     public string MediaActionText => _showingCurrentMedia ? "Remove" : "Add";
-    public ManagePlaylistMediaPage()
+    public ManagePlaylistMediaPage(FiloApiService apiService)
 	{
 		InitializeComponent();
-        _httpClient = new HttpClient();
-        _httpClient.BaseAddress = new Uri("https://localhost:7038/");
+        _apiService = apiService;
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -35,38 +35,57 @@ public partial class ManagePlaylistMediaPage : ContentPage, IQueryAttributable
     {
         base.OnAppearing();
 
-        await LoadCurrentMedia();
-        await LoadAvailableMedia();
+        if (_isBusy)
+            return;
 
-        UpdateMediaDisplay();
+        _isBusy = true;
+
+        try
+        {
+            await LoadAllMedia();
+        }
+        finally
+        {
+            _isBusy = false;
+        }
     }
 
-    private async Task LoadCurrentMedia()
+    // On failure the lists already shown are kept.
+    private async Task LoadAllMedia()
     {
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await _httpClient.GetAsync($"api/playlists/{PlaylistId}/media");
-        if (!response.IsSuccessStatusCode)
+        while (true)
         {
-            await DisplayAlertAsync("Error", "Something went wrong", "Close");
-            return;
-        }
+            try
+            {
+                var current = await LoadMediaList($"api/playlists/{PlaylistId}/media");
+                var available = await LoadMediaList($"api/playlists/{PlaylistId}/available-media");
 
-        _currentMedia = await response.Content.ReadFromJsonAsync<List<MediaResponse>>() ?? new List<MediaResponse>();
+                _currentMedia = current;
+                _availableMedia = available;
+                UpdateMediaDisplay();
+                return;
+            }
+            catch (Exception ex)
+            {
+                if (!await ErrorPresenter.ShowLoadFailureAsync(this, ex, "load the playlist's media"))
+                    return;
+            }
+        }
     }
 
-    private async Task LoadAvailableMedia()
+    private async Task<List<MediaResponse>> LoadMediaList(string endpoint)
     {
-        var token = await SecureStorage.Default.GetAsync("accessToken");
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        var response = await _httpClient.GetAsync($"api/playlists/{PlaylistId}/available-media");
+        using var response = await _apiService.GetWithRetryAsync(endpoint);
+
         if (!response.IsSuccessStatusCode)
         {
-            await DisplayAlertAsync("Error", "Something went wrong", "Close");
-            return;
+            throw new HttpRequestException(
+                await ApiErrors.DescribeAsync(response, "load the playlist's media"),
+                null,
+                response.StatusCode);
         }
 
-        _availableMedia = await response.Content.ReadFromJsonAsync<List<MediaResponse>>() ?? new List<MediaResponse>();
+        return await response.Content.ReadFromJsonAsync<List<MediaResponse>>() ?? new List<MediaResponse>();
     }
 
     private void UpdateMediaDisplay()
@@ -144,44 +163,46 @@ public partial class ManagePlaylistMediaPage : ContentPage, IQueryAttributable
 
     private async void OnMediaActionClicked(object sender, EventArgs e)
     {
-        if (sender is Button button && button.BindingContext is MediaResponse media)
+        if (sender is not Button button || button.BindingContext is not MediaResponse media)
+            return;
+
+        // One change at a time, so repeated clicks can't double-apply.
+        if (_isBusy)
+            return;
+
+        _isBusy = true;
+        button.IsEnabled = false;
+        bool removing = _showingCurrentMedia;
+
+        try
+        {
+            using var response = removing
+                ? await _apiService.DeleteAsync($"api/playlists/{PlaylistId}/media/{media.MediaFileId}")
+                : await _apiService.PostEmptyAsync($"api/playlists/{PlaylistId}/media/{media.MediaFileId}");
+
+            // 404 on remove / 409 on add: an earlier attempt already
+            // made this change, so just refresh the lists.
+            bool alreadyDone = removing
+                ? response.StatusCode == HttpStatusCode.NotFound
+                : response.StatusCode == HttpStatusCode.Conflict;
+
+            if (!response.IsSuccessStatusCode && !alreadyDone)
             {
-
-            button.IsEnabled = false;
-            try
-            {
-                var token = await SecureStorage.Default.GetAsync("accessToken");
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-                HttpResponseMessage response;
-
-
-                if (_showingCurrentMedia)
-                {
-                    response = await _httpClient.DeleteAsync($"api/playlists/{PlaylistId}/media/{media.MediaFileId}");
-                } 
-                
-                else
-                {
-                response = await _httpClient.PostAsync($"api/playlists/{PlaylistId}/media/{media.MediaFileId}", null);
-                }
-
-                if (!response.IsSuccessStatusCode)
-                    {
-                        await DisplayAlertAsync("Error", "Something went wrong", "Close");
-                        return;
-                    }
-
-                await LoadCurrentMedia();
-                await LoadAvailableMedia();
-                UpdateMediaDisplay();
-                } 
-            
-            finally
-            {
-                button.IsEnabled = true;
+                await ErrorPresenter.ShowAsync(this, response, "update the playlist");
+                return;
             }
 
+            await LoadAllMedia();
         }
-    } 
+        catch (Exception ex)
+        {
+            // Safe to try again: a repeat is reported as already done.
+            await ErrorPresenter.ShowAsync(this, ex, "update the playlist", mayHaveSucceeded: true);
+        }
+        finally
+        {
+            button.IsEnabled = true;
+            _isBusy = false;
+        }
+    }
 }
